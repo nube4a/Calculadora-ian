@@ -70,8 +70,9 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
     var error by remember { mutableStateOf<String?>(null) }
     var solution by remember { mutableStateOf<StepSolution?>(null) }
 
-    val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
-    DisposableEffect(Unit) { onDispose { recognizer.close() } }
+    // El reconocedor se crea solo al escanear por primera vez (carga el modelo de ML Kit).
+    val recognizerHolder = remember { lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) } }
+    DisposableEffect(Unit) { onDispose { if (recognizerHolder.isInitialized()) recognizerHolder.value.close() } }
 
     fun solve() {
         error = null
@@ -95,7 +96,7 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
             error = "No se pudo abrir la imagen"
             return
         }
-        recognizer.process(image)
+        recognizerHolder.value.process(image)
             .addOnSuccessListener { text ->
                 val found = text.textBlocks.flatMap { it.lines }
                     .map { MathText.normalizeOcr(it.text) }
