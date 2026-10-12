@@ -360,9 +360,20 @@ object Symbolic {
             desc.size == 3 -> {
                 val (a, b, c) = desc
                 val disc = b * b - 4 * a * c
-                if (disc >= 0) {
-                    linear((-b - kotlin.math.sqrt(disc)) / (2 * a)); linear((-b + kotlin.math.sqrt(disc)) / (2 * a))
-                } else quadratic(b / a, c / a)
+                val center = -b / (2 * a)
+                val rad = disc / (4 * a * a)
+                val sq = kotlin.math.sqrt(rad)
+                when {
+                    disc < 0 -> quadratic(b / a, c / a)
+                    // Raíces irracionales exactas: centro ± √rad (por ejemplo 1 ± √3).
+                    !nice(sq) && nice(rad) && (isInt(center) || StepSolver.toFraction(center) != null) -> {
+                        val root = "√" + (StepSolver.toFraction(rad)?.let { "($it)" } ?: numText(rad))
+                        val base = if (center == 0.0) "x" else "x " + (if (center > 0) "− " + numText(center) else "+ " + numText(-center))
+                        parts += "($base − $root)"
+                        parts += "($base + $root)"
+                    }
+                    else -> { linear(center - sq); linear(center + sq) }
+                }
             }
             desc.size > 3 -> {
                 val roots = polynomialRoots(desc).toMutableList()

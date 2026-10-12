@@ -73,6 +73,8 @@ class SymbolicTest {
         assertEquals("(x + 1)²(x − 2)", Symbolic.factorText(c))
         assertEquals("(x − 1)(x² + 1)", Symbolic.factorText(Symbolic.polynomialCoefficients("x^3−x^2+x−1")!!))
         assertEquals(null, Symbolic.polynomialCoefficients("sin(x)"))
+        assertEquals("(x − 1)(x − 1 − √3)(x − 1 + √3)", Symbolic.factorText(Symbolic.polynomialCoefficients("x^3−3x^2+2")!!))
+        assertEquals("(x − √2)(x + √2)", Symbolic.factorText(Symbolic.polynomialCoefficients("x^2−2")!!))
         assertEquals(64.0, Evaluator.evaluate("2¹⁰÷2⁴"), 0.0)
     }
 }
