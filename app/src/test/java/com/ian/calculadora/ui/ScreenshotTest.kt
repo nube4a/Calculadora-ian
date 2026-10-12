@@ -109,8 +109,7 @@ class ScreenshotTest {
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp-night-xxhdpi")
     fun modoOscuro() {
-        shot("20_oscuro_bienvenida")
-        key("Saltar")
+        // La bienvenida ya quedó marcada como vista en la prueba anterior.
         shot("21_oscuro_inicio")
         keys("2", "sin", "3", "0", ")", "+", "√", "1", "6")
         key("=")
