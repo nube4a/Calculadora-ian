@@ -12,8 +12,8 @@ android {
         applicationId = "com.ian.calculadora"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "3.1"
+        versionCode = 5
+        versionName = "3.2"
     }
 
     // Firma de subida para Google Play. Los datos vienen de variables de entorno
@@ -69,6 +69,7 @@ dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2025.04.00")
     implementation(composeBom)
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")

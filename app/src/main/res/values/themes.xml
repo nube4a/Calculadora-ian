@@ -2,4 +2,11 @@
     <style name="Theme.Calculadora" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/window_bg</item>
     </style>
+
+    <!-- Pantalla de arranque: logo animado sobre fondo grafito. -->
+    <style name="Theme.Calculadora.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Calculadora</item>
+    </style>
 </resources>

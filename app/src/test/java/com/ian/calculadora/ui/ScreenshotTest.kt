@@ -52,6 +52,14 @@ class ScreenshotTest {
 
     @Test
     fun recorrido() {
+        // Bienvenida (primera vez)
+        shot("00_bienvenida_1")
+        key("Siguiente")
+        shot("00_bienvenida_2")
+        key("Siguiente")
+        shot("00_bienvenida_3")
+        key("Empezar")
+        shot("00_calculadora_inicio")
         keys("2", "sin", "3", "0", ")", "+", "√", "1", "6")
         shot("01_calculadora_escribiendo")
         key("=")

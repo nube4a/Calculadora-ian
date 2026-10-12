@@ -7,7 +7,12 @@ import android.content.res.Configuration
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +33,6 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +42,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import com.ian.calculadora.ui.theme.LocalCalcColors
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -151,9 +159,9 @@ private fun TopBar(
         IconButton(onClick = onOpenMenu) {
             Icon(Icons.Outlined.Menu, contentDescription = "Herramientas")
         }
-        AssistChip(onClick = { vm.toggleAngle() }, label = { Text(state.angleMode.name) })
-        AssistChip(onClick = { vm.cycleDisplayMode() }, label = { Text(state.displayMode.label) })
-        if (state.hasMemory) Text("M", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        ModePill(state.angleMode.name) { vm.toggleAngle() }
+        ModePill(state.displayMode.label) { vm.cycleDisplayMode() }
+        if (state.hasMemory) ModePill("M", highlighted = true) { vm.memoryRecall() }
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onOpenScan) {
             Icon(Icons.Outlined.PhotoCamera, contentDescription = "Escanear operación")
@@ -161,6 +169,35 @@ private fun TopBar(
         IconButton(onClick = onOpenHistory) {
             Icon(Icons.Outlined.History, contentDescription = "Historial")
         }
+    }
+}
+
+@Composable
+private fun ModePill(text: String, highlighted: Boolean = false, onClick: () -> Unit) {
+    val c = LocalCalcColors.current
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (highlighted) c.equals else c.function)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            color = if (highlighted) c.onEquals else c.onFunction,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+private fun greeting(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when {
+        hour < 12 -> "Buenos días"
+        hour < 19 -> "Buenas tardes"
+        else -> "Buenas noches"
     }
 }
 
@@ -178,14 +215,24 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
     val ghost = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
     Column(
         modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clip(RoundedCornerShape(28.dp))
+            .background(LocalCalcColors.current.display)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(28.dp))
             .combinedClickable(onClick = {}, onLongClick = onCopy)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End,
     ) {
         val finished = state.result != null
+        if (state.expression.isEmpty() && !finished && state.error == null) {
+            Text(
+                greeting(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 16.sp,
+                modifier = Modifier.align(Alignment.Start),
+            )
+            Spacer(Modifier.weight(1f))
+        }
         Text(
             text = buildAnnotatedString {
                 append(state.expression.ifEmpty { "0" })
@@ -335,18 +382,22 @@ private fun KeyRow(keys: List<Key>, modifier: Modifier, compact: Boolean = false
 @Composable
 private fun RowScope.KeyButton(key: Key, compact: Boolean) {
     val view = LocalView.current
-    val colors = MaterialTheme.colorScheme
+    val c = LocalCalcColors.current
     val (bg, fg) = when {
-        key.active -> colors.primary to colors.onPrimary
+        key.active -> c.equals to c.onEquals
         else -> when (key.kind) {
-            KeyKind.NUMBER -> colors.secondaryContainer to colors.onSecondaryContainer
-            KeyKind.OPERATOR -> colors.primaryContainer to colors.onPrimaryContainer
-            KeyKind.FUNCTION -> colors.tertiaryContainer to colors.onTertiaryContainer
-            KeyKind.ACTION -> colors.surfaceVariant to colors.primary
-            KeyKind.EQUALS -> colors.primary to colors.onPrimary
-            KeyKind.MEMORY -> Color.Transparent to colors.onSurfaceVariant
+            KeyKind.NUMBER -> c.number to c.onNumber
+            KeyKind.OPERATOR -> c.operator to c.onOperator
+            KeyKind.FUNCTION -> c.function to c.onFunction
+            KeyKind.ACTION -> c.action to c.onAction
+            KeyKind.EQUALS -> c.equals to c.onEquals
+            KeyKind.MEMORY -> Color.Transparent to MaterialTheme.colorScheme.onSurfaceVariant
         }
     }
+    // La tecla se "hunde" un poco al tocarla.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, label = "tecla")
     val fontSize = when {
         key.kind == KeyKind.MEMORY -> 14.sp
         compact -> if (key.label.length > 3) 14.sp else 17.sp
@@ -358,9 +409,12 @@ private fun RowScope.KeyButton(key: Key, compact: Boolean) {
             .weight(1f)
             .fillMaxHeight()
             .padding(if (compact || key.kind == KeyKind.MEMORY) 3.dp else 4.dp)
-            .clip(RoundedCornerShape(if (compact) 14.dp else 22.dp))
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(RoundedCornerShape(if (compact) 14.dp else 26.dp))
             .background(bg)
             .combinedClickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                     key.onClick()
@@ -381,7 +435,11 @@ private fun RowScope.KeyButton(key: Key, compact: Boolean) {
                 key.label,
                 color = fg,
                 fontSize = fontSize,
-                fontWeight = if (key.kind == KeyKind.FUNCTION) FontWeight.Normal else FontWeight.Medium,
+                fontWeight = when (key.kind) {
+                    KeyKind.FUNCTION, KeyKind.MEMORY -> FontWeight.Normal
+                    KeyKind.EQUALS, KeyKind.ACTION -> FontWeight.SemiBold
+                    else -> FontWeight.Medium
+                },
                 maxLines = 1,
             )
         }
