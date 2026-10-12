@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.outlined.Functions
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.Science
@@ -41,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.ian.calculadora.ui.AlgebraScreen
 import com.ian.calculadora.ui.CalculatorScreen
 import com.ian.calculadora.ui.ConstantsScreen
 import com.ian.calculadora.ui.GraphScreen
@@ -57,6 +59,7 @@ enum class Screen(val title: String, val icon: ImageVector) {
     CALC("Calculadora", Icons.Outlined.Calculate),
     SCAN("Escanear y resolver (paso a paso)", Icons.Outlined.DocumentScanner),
     GRAPH("Gráficas", Icons.Outlined.ShowChart),
+    ALGEBRA("Derivadas y álgebra", Icons.Outlined.Insights),
     SOLVER("Ecuaciones", Icons.Outlined.Functions),
     UNITS("Conversor de unidades", Icons.Outlined.SwapHoriz),
     PROGRAMMER("Programador (HEX/BIN)", Icons.Outlined.Memory),
@@ -133,6 +136,12 @@ class MainActivity : ComponentActivity() {
                             })
                             Screen.HISTORY -> HistoryScreen(viewModel, onBack = goBack)
                             Screen.GRAPH -> GraphScreen(viewModel, onBack = goBack)
+                            Screen.ALGEBRA -> AlgebraScreen(viewModel, onBack = goBack, onGraph = { exprs ->
+                                listOf("graph_f1", "graph_f2", "graph_f3").forEachIndexed { i, key ->
+                                    viewModel.saveText(key, exprs.getOrElse(i) { "" })
+                                }
+                                screen = Screen.GRAPH
+                            })
                             Screen.SOLVER -> SolverScreen(viewModel, onBack = goBack)
                             Screen.UNITS -> UnitsScreen(viewModel, onBack = goBack)
                             Screen.PROGRAMMER -> ProgrammerScreen(viewModel, onBack = goBack)

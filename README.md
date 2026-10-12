@@ -42,6 +42,14 @@ Comprobación:                    14·√16 + 15 = 71 ✓
 - Resultados como fracción cuando corresponde (`x = 1/3`), botón para graficar o usar el resultado.
 - También puedes escribir la ecuación a mano en esa pantalla.
 
+## Derivadas y álgebra (simbólico)
+
+- **Derivada exacta** con las reglas usadas: `d/dx x²·sin(x) = x²·cos(x) + 2x·sin(x)`, también f″(x).
+- **Simplificación:** `2(x+1)` → `2x + 2`, `x·x` → `x²`, `ln(e^x)` → `x`.
+- **Polinomios:** expandir `(x+1)²(x−2)` → `x³ − 3x − 2` y factorizar al revés.
+- **En un punto:** f(a), pendiente f′(a), f″(a) y la **recta tangente** (graficable).
+- **Estudio de la función:** raíces, máximos, mínimos e inflexiones en un intervalo.
+
 ## Herramientas de ingeniería (menú ☰)
 
 - **Gráficas:** hasta 3 funciones a la vez, mover con el dedo, zoom con pellizco, tocar para leer

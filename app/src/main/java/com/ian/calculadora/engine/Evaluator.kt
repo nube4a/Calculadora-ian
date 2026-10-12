@@ -186,6 +186,10 @@ object Names {
 internal class Tokenizer(private val src: String) {
     private var i = 0
 
+    private companion object {
+        const val SUPERSCRIPTS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
+    }
+
     fun tokenize(): List<Token> {
         val out = mutableListOf<Token>()
         while (i < src.length) {
@@ -198,8 +202,16 @@ internal class Tokenizer(private val src: String) {
                 c == '*' || c == '×' || c == '·' -> { out += Token.Op("*"); i++ }
                 c == '/' || c == '÷' -> { out += Token.Op("/"); i++ }
                 c == '^' -> { out += Token.Op("^"); i++ }
-                c == '²' -> { out += Token.Op("^"); out += Token.Num(2.0); i++ }
-                c == '³' -> { out += Token.Op("^"); out += Token.Num(3.0); i++ }
+                c in SUPERSCRIPTS -> {
+                    // x², x¹⁰ → x^2, x^10
+                    var v = 0.0
+                    while (i < src.length && src[i] in SUPERSCRIPTS) {
+                        v = v * 10 + SUPERSCRIPTS.indexOf(src[i])
+                        i++
+                    }
+                    out += Token.Op("^")
+                    out += Token.Num(v)
+                }
                 c == '!' || c == '%' -> { out += Token.Postfix(c); i++ }
                 c == '(' || c == '[' -> { out += Token.LParen; i++ }
                 c == ')' || c == ']' -> { out += Token.RParen; i++ }
