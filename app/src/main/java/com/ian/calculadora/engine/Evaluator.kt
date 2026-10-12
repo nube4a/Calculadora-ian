@@ -9,6 +9,7 @@ import kotlin.math.asinh
 import kotlin.math.atan
 import kotlin.math.atanh
 import kotlin.math.cbrt
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.cosh
 import kotlin.math.exp
@@ -28,12 +29,23 @@ enum class AngleMode { DEG, RAD }
 
 class CalcException(message: String) : Exception(message)
 
+/** Estado con el que se evalúa una expresión. `vars` contiene variables como x. */
+class EvalContext(
+    val angle: AngleMode = AngleMode.DEG,
+    val ans: Double = 0.0,
+    val random: () -> Double = { Math.random() },
+    val vars: MutableMap<String, Double> = HashMap(),
+) {
+    internal var budget = 0
+}
+
 /**
  * Evaluador de expresiones científicas.
  *
  * Soporta: + − × ÷ ^ mod, paréntesis (se cierran solos al evaluar), multiplicación implícita
- * (2π, 3(4), 2sin(30)), notación E (1.5E3), postfijos ! y %, constantes π, e, Ans, Rand,
- * funciones trigonométricas (directas, inversas e hiperbólicas), logaritmos, raíces, nCr, nPr...
+ * (2π, 3(4), 2sin(30)), notación E (1.5E3), postfijos ! y %, constantes π, e, Ans, Rand, la variable x,
+ * funciones trigonométricas (directas, inversas e hiperbólicas), logaritmos, raíces, nCr, nPr,
+ * y cálculo: ∫(f,a,b), d/dx(f,a), Σ(f,a,b), Π(f,a,b).
  */
 object Evaluator {
 
@@ -42,13 +54,22 @@ object Evaluator {
         angleMode: AngleMode = AngleMode.DEG,
         ans: Double = 0.0,
         random: () -> Double = { Math.random() },
-    ): Double {
+    ): Double = compile(input).evaluate(EvalContext(angleMode, ans, random))
+
+    /** Analiza la expresión una sola vez; útil para graficar o resolver (se evalúa muchas veces). */
+    fun compile(input: String): Expression {
         val tokens = Tokenizer(input).tokenize()
         if (tokens.isEmpty()) throw CalcException("Expresión vacía")
-        val value = Parser(autoClose(tokens), angleMode, ans, random).parse()
-        if (value.isNaN()) throw CalcException("Error matemático")
-        if (value.isInfinite()) throw CalcException("Desbordamiento")
-        return value
+        return Expression(Parser(autoClose(tokens)).parse())
+    }
+
+    /** Compila una ecuación "izq = der" como la función izq − der (o la expresión tal cual si no hay "="). */
+    fun compileEquation(input: String): Expression {
+        val parts = input.split('=')
+        if (parts.size > 2) throw CalcException("Solo puede haber un signo =")
+        if (parts.size == 1) return compile(input)
+        if (parts[0].isBlank() || parts[1].isBlank()) throw CalcException("Falta un lado de la ecuación")
+        return Expression(BinNode('-', compile(parts[0]).root, compile(parts[1]).root))
     }
 
     /** Cuántos paréntesis quedan abiertos en la expresión (para mostrarlos en gris). */
@@ -70,6 +91,32 @@ object Evaluator {
             }
         }
         return tokens + List(depth) { Token.RParen }
+    }
+}
+
+class Expression internal constructor(internal val root: Node) {
+
+    fun evaluate(ctx: EvalContext): Double {
+        ctx.budget = MAX_EVALS
+        val v = root.eval(ctx)
+        if (v.isNaN()) throw CalcException("Error matemático")
+        if (v.isInfinite()) throw CalcException("Desbordamiento")
+        return v
+    }
+
+    /** f(x) para gráficas y métodos numéricos: devuelve NaN en vez de lanzar errores. */
+    fun at(x: Double, ctx: EvalContext): Double {
+        ctx.vars["x"] = x
+        ctx.budget = MAX_EVALS
+        return try {
+            root.eval(ctx)
+        } catch (e: CalcException) {
+            Double.NaN
+        }
+    }
+
+    companion object {
+        internal const val MAX_EVALS = 2_000_000
     }
 }
 
@@ -102,16 +149,38 @@ object Names {
     const val MOD = "mod"
     const val ANS = "Ans"
     const val RAND = "Rand"
+    const val INTEGRAL = "∫"
+    const val DERIV = "d/dx"
+    const val SUM = "Σ"
+    const val PROD = "Π"
 
-    val functions = listOf(
-        "sin", "cos", "tan", ASIN, ACOS, ATAN,
-        "sinh", "cosh", "tanh", ASINH, ACOSH, ATANH,
-        "ln", "log", LOG2, SQRT, CBRT, ROOT, ABS, NCR, NPR,
+    /** Funciones y cuántos argumentos aceptan. */
+    internal val arity: Map<String, IntRange> = buildMap {
+        listOf(
+            "sin", "cos", "tan", ASIN, ACOS, ATAN, "sinh", "cosh", "tanh", ASINH, ACOSH, ATANH,
+            "ln", "log", LOG2, SQRT, CBRT, ABS, "exp", "floor", "ceil", "round",
+        ).forEach { put(it, 1..1) }
+        listOf(ROOT, NCR, NPR, "gcd", "lcm", DERIV).forEach { put(it, 2..2) }
+        listOf(INTEGRAL, SUM, PROD).forEach { put(it, 3..3) }
+        put("max", 1..64)
+        put("min", 1..64)
+    }
+
+    /** Funciones cuyo primer argumento es una expresión en x (no se evalúa directamente). */
+    internal val lazy = setOf(INTEGRAL, DERIV, SUM, PROD)
+
+    val constants = listOf("π", "e", ANS, RAND, "x")
+
+    /** Escritura alternativa con el teclado normal: pi, sqrt, asin... */
+    internal val aliases = mapOf(
+        "pi" to "π", "sqrt" to SQRT, "cbrt" to CBRT, "asin" to ASIN, "acos" to ACOS, "atan" to ATAN,
+        "asinh" to ASINH, "acosh" to ACOSH, "atanh" to ATANH, "log2" to LOG2, "ans" to ANS,
+        "integral" to INTEGRAL, "deriv" to DERIV, "sum" to SUM, "prod" to PROD,
     )
-    val constants = listOf("π", "e", ANS, RAND)
 
     /** Todas las palabras reconocidas, de la más larga a la más corta (para backspace y tokenizado). */
-    val words: List<String> = (functions + constants + MOD).sortedByDescending { it.length }
+    val words: List<String> =
+        (arity.keys + constants + MOD + aliases.keys).sortedByDescending { it.length }
 }
 
 internal class Tokenizer(private val src: String) {
@@ -126,12 +195,14 @@ internal class Tokenizer(private val src: String) {
                 c.isDigit() || c == '.' -> out += Token.Num(readNumber())
                 c == '+' -> { out += Token.Op("+"); i++ }
                 c == '-' || c == '−' -> { out += Token.Op("-"); i++ }
-                c == '*' || c == '×' -> { out += Token.Op("*"); i++ }
+                c == '*' || c == '×' || c == '·' -> { out += Token.Op("*"); i++ }
                 c == '/' || c == '÷' -> { out += Token.Op("/"); i++ }
                 c == '^' -> { out += Token.Op("^"); i++ }
+                c == '²' -> { out += Token.Op("^"); out += Token.Num(2.0); i++ }
+                c == '³' -> { out += Token.Op("^"); out += Token.Num(3.0); i++ }
                 c == '!' || c == '%' -> { out += Token.Postfix(c); i++ }
-                c == '(' -> { out += Token.LParen; i++ }
-                c == ')' -> { out += Token.RParen; i++ }
+                c == '(' || c == '[' -> { out += Token.LParen; i++ }
+                c == ')' || c == ']' -> { out += Token.RParen; i++ }
                 c == ',' || c == ';' -> { out += Token.Comma; i++ }
                 else -> out += readWord()
             }
@@ -172,10 +243,11 @@ internal class Tokenizer(private val src: String) {
         for (w in Names.words) {
             if (src.startsWith(w, i)) {
                 i += w.length
-                return when (w) {
-                    in Names.functions -> Token.Func(w)
+                val name = Names.aliases[w] ?: w
+                return when (name) {
+                    in Names.arity -> Token.Func(name)
                     Names.MOD -> Token.Op("mod")
-                    else -> Token.Const(w)
+                    else -> Token.Const(name)
                 }
             }
         }
@@ -183,19 +255,117 @@ internal class Tokenizer(private val src: String) {
     }
 }
 
-internal class Parser(
-    private val tokens: List<Token>,
-    private val angle: AngleMode,
-    private val ans: Double,
-    private val random: () -> Double,
-) {
+// ---------- Árbol de la expresión ----------
+
+internal sealed interface Node {
+    fun eval(c: EvalContext): Double
+}
+
+internal class NumNode(private val v: Double) : Node {
+    override fun eval(c: EvalContext) = v
+}
+
+internal class ConstNode(private val name: String) : Node {
+    override fun eval(c: EvalContext): Double = when (name) {
+        "π" -> PI
+        "e" -> Math.E
+        Names.ANS -> c.ans
+        Names.RAND -> c.random()
+        else -> c.vars[name] ?: throw CalcException("$name no tiene valor (úsala en ∫, d/dx, Σ o gráficas)")
+    }
+}
+
+internal class NegNode(val n: Node) : Node {
+    override fun eval(c: EvalContext) = -n.eval(c)
+}
+
+/** x% — el valor ÷ 100, y además permite que 200 + 10% = 220. */
+internal class PctNode(private val n: Node) : Node {
+    override fun eval(c: EvalContext) = n.eval(c) / 100.0
+}
+
+internal class FactNode(private val n: Node) : Node {
+    override fun eval(c: EvalContext) = factorial(n.eval(c))
+}
+
+private fun isPct(n: Node): Boolean = n is PctNode || (n is NegNode && isPct(n.n))
+
+internal class BinNode(private val op: Char, private val l: Node, private val r: Node) : Node {
+    override fun eval(c: EvalContext): Double {
+        val a = l.eval(c)
+        val b = r.eval(c)
+        return when (op) {
+            '+' -> if (isPct(r)) a + a * b else a + b
+            '-' -> if (isPct(r)) a - a * b else a - b
+            '*' -> a * b
+            '/' -> {
+                if (b == 0.0) throw CalcException("División por cero")
+                a / b
+            }
+            'm' -> {
+                if (b == 0.0) throw CalcException("División por cero")
+                a.mod(b)
+            }
+            '^' -> pow(a, b)
+            else -> throw CalcException("Operador desconocido")
+        }
+    }
+}
+
+internal class CallNode(private val name: String, private val args: List<Node>) : Node {
+    override fun eval(c: EvalContext): Double {
+        if (name in Names.lazy) return evalCalculus(c)
+        val v = args.map { it.eval(c) }
+        return callFunction(name, v, c.angle)
+    }
+
+    private fun evalCalculus(c: EvalContext): Double {
+        val f = args[0]
+        val saved = c.vars["x"]
+        val fx = { x: Double ->
+            if (--c.budget < 0) throw CalcException("Cálculo demasiado largo")
+            c.vars["x"] = x
+            f.eval(c)
+        }
+        try {
+            // Los límites se evalúan con la x exterior (si existe), no con la del integrando.
+            fun bound(i: Int): Double {
+                if (saved != null) c.vars["x"] = saved else c.vars.remove("x")
+                return args[i].eval(c)
+            }
+            return when (name) {
+                Names.INTEGRAL -> integrate(fx, bound(1), bound(2))
+                Names.DERIV -> derivative(fx, bound(1))
+                else -> {
+                    val a = bound(1)
+                    val b = bound(2)
+                    if (!isInt(a) || !isInt(b)) throw CalcException("Los límites de $name deben ser enteros")
+                    val from = round(a).toLong()
+                    val to = round(b).toLong()
+                    if (to - from > 1_000_000) throw CalcException("Demasiados términos")
+                    var acc = if (name == Names.SUM) 0.0 else 1.0
+                    var k = from
+                    while (k <= to) {
+                        val term = fx(k.toDouble())
+                        acc = if (name == Names.SUM) acc + term else acc * term
+                        k++
+                    }
+                    acc
+                }
+            }
+        } finally {
+            if (saved != null) c.vars["x"] = saved else c.vars.remove("x")
+        }
+    }
+}
+
+// ---------- Analizador sintáctico ----------
+
+internal class Parser(private val tokens: List<Token>) {
     private var pos = 0
 
-    /** Valor con una marca de "es porcentaje" para que 200 + 10% = 220. */
-    private data class V(val v: Double, val pct: Boolean = false)
-
-    fun parse(): Double {
-        val result = expression().v
+    fun parse(): Node {
+        val result = expression()
         if (pos < tokens.size) throw CalcException("Error de sintaxis")
         return result
     }
@@ -208,33 +378,25 @@ internal class Parser(
         return false
     }
 
-    private fun expression(): V {
+    private fun expression(): Node {
         var left = term()
         while (true) {
-            val plus = matchOp("+")
-            if (!plus && !matchOp("-")) return left
-            val right = term()
-            val r = if (right.pct) left.v * right.v else right.v
-            left = V(if (plus) left.v + r else left.v - r)
+            left = when {
+                matchOp("+") -> BinNode('+', left, term())
+                matchOp("-") -> BinNode('-', left, term())
+                else -> return left
+            }
         }
     }
 
-    private fun term(): V {
+    private fun term(): Node {
         var left = unary()
         while (true) {
             left = when {
-                matchOp("*") -> V(left.v * unary().v)
-                matchOp("/") -> {
-                    val r = unary().v
-                    if (r == 0.0) throw CalcException("División por cero")
-                    V(left.v / r)
-                }
-                matchOp("mod") -> {
-                    val r = unary().v
-                    if (r == 0.0) throw CalcException("División por cero")
-                    V(left.v.mod(r))
-                }
-                startsOperand(peek()) -> V(left.v * unary().v) // multiplicación implícita
+                matchOp("*") -> BinNode('*', left, unary())
+                matchOp("/") -> BinNode('/', left, unary())
+                matchOp("mod") -> BinNode('m', left, unary())
+                startsOperand(peek()) -> BinNode('*', left, unary()) // multiplicación implícita
                 else -> return left
             }
         }
@@ -243,48 +405,52 @@ internal class Parser(
     private fun startsOperand(t: Token?) =
         t is Token.Num || t is Token.Const || t is Token.Func || t is Token.LParen
 
-    private fun unary(): V = when {
-        matchOp("-") -> unary().let { V(-it.v, it.pct) }
+    private fun unary(): Node = when {
+        matchOp("-") -> NegNode(unary())
         matchOp("+") -> unary()
         else -> power()
     }
 
-    private fun power(): V {
+    private fun power(): Node {
         val base = postfix()
         if (!matchOp("^")) return base
-        return V(pow(base.v, unary().v))
+        return BinNode('^', base, unary())
     }
 
-    private fun postfix(): V {
+    private fun postfix(): Node {
         var value = primary()
         while (true) {
             val t = peek()
             if (t !is Token.Postfix) return value
             pos++
-            value = if (t.op == '!') V(factorial(value.v)) else V(value.v / 100.0, pct = true)
+            value = if (t.op == '!') FactNode(value) else PctNode(value)
         }
     }
 
-    private fun primary(): V {
+    private fun primary(): Node {
         val t = peek() ?: throw CalcException("Expresión incompleta")
         pos++
         return when (t) {
-            is Token.Num -> V(t.value)
-            is Token.Const -> V(
-                when (t.name) {
-                    "π" -> PI
-                    "e" -> Math.E
-                    Names.ANS -> ans
-                    else -> random()
-                }
-            )
+            is Token.Num -> NumNode(t.value)
+            is Token.Const -> ConstNode(t.name)
             is Token.LParen -> {
                 if (peek() is Token.RParen) throw CalcException("Paréntesis vacíos")
                 val v = expression()
                 expect(Token.RParen)
-                V(v.v)
+                // Un porcentaje entre paréntesis ya no es "porcentaje de" en sumas.
+                if (isPct(v)) BinNode('*', v, NumNode(1.0)) else v
             }
-            is Token.Func -> V(call(t.name, arguments()))
+            is Token.Func -> {
+                val args = arguments()
+                val range = Names.arity.getValue(t.name)
+                if (args.size !in range) {
+                    val n = range.first
+                    throw CalcException(
+                        "${t.name} necesita $n ${if (n == 1) "argumento" else "argumentos separados por coma"}"
+                    )
+                }
+                CallNode(t.name, args)
+            }
             else -> throw CalcException("Error de sintaxis")
         }
     }
@@ -294,87 +460,103 @@ internal class Parser(
         pos++
     }
 
-    private fun arguments(): List<Double> {
-        if (peek() != Token.LParen) return listOf(unary().v) // sin30, √9
+    private fun arguments(): List<Node> {
+        if (peek() != Token.LParen) return listOf(unary()) // sin30, √9
         pos++
-        val args = mutableListOf(expression().v)
+        val args = mutableListOf(expression())
         while (peek() == Token.Comma) {
             pos++
-            args += expression().v
+            args += expression()
         }
         expect(Token.RParen)
         return args
     }
+}
 
-    private fun toRad(x: Double) = if (angle == AngleMode.DEG) Math.toRadians(x) else x
-    private fun fromRad(x: Double) = if (angle == AngleMode.DEG) Math.toDegrees(x) else x
+// ---------- Funciones ----------
 
-    /** Limpia el ruido de punto flotante en trigonometría: sin(180°) = 0, no 1.2E-16. */
-    private fun clean(x: Double) = if (abs(x) < 1e-14) 0.0 else x
+/** Limpia el ruido de punto flotante en trigonometría: sin(180°) = 0, no 1.2E-16. */
+private fun clean(x: Double) = if (abs(x) < 1e-14) 0.0 else x
 
-    private fun call(name: String, args: List<Double>): Double {
-        val arity = if (name == Names.ROOT || name == Names.NCR || name == Names.NPR) 2 else 1
-        if (args.size != arity) {
-            throw CalcException("$name necesita $arity ${if (arity == 1) "argumento" else "argumentos (separa con ,)"}")
+private fun domain(ok: Boolean) {
+    if (!ok) throw CalcException("Fuera del dominio")
+}
+
+internal fun callFunction(name: String, args: List<Double>, angle: AngleMode): Double {
+    fun toRad(x: Double) = if (angle == AngleMode.DEG) Math.toRadians(x) else x
+    fun fromRad(x: Double) = if (angle == AngleMode.DEG) Math.toDegrees(x) else x
+    val x = args[0]
+    return when (name) {
+        "sin" -> clean(sin(toRad(x)))
+        "cos" -> clean(cos(toRad(x)))
+        "tan" -> {
+            val r = toRad(x)
+            if (abs(cos(r)) < 1e-14) throw CalcException("tan no definida")
+            clean(tan(r))
         }
-        val x = args[0]
-        return when (name) {
-            "sin" -> clean(sin(toRad(x)))
-            "cos" -> clean(cos(toRad(x)))
-            "tan" -> {
-                val r = toRad(x)
-                if (abs(cos(r)) < 1e-14) throw CalcException("tan no definida")
-                clean(tan(r))
-            }
-            Names.ASIN -> { domain(x in -1.0..1.0); fromRad(asin(x)) }
-            Names.ACOS -> { domain(x in -1.0..1.0); fromRad(acos(x)) }
-            Names.ATAN -> fromRad(atan(x))
-            "sinh" -> sinh(x)
-            "cosh" -> cosh(x)
-            "tanh" -> tanh(x)
-            Names.ASINH -> asinh(x)
-            Names.ACOSH -> { domain(x >= 1.0); acosh(x) }
-            Names.ATANH -> { domain(x > -1.0 && x < 1.0); atanh(x) }
-            "ln" -> { domain(x > 0); ln(x) }
-            "log" -> { domain(x > 0); log10(x) }
-            Names.LOG2 -> { domain(x > 0); log2(x) }
-            Names.SQRT -> { domain(x >= 0); sqrt(x) }
-            Names.CBRT -> cbrt(x)
-            Names.ABS -> abs(x)
-            Names.ROOT -> nthRoot(x, args[1])
-            Names.NCR -> combinations(x, args[1])
-            Names.NPR -> permutations(x, args[1])
-            else -> throw CalcException("Función desconocida")
+        Names.ASIN -> { domain(x in -1.0..1.0); fromRad(asin(x)) }
+        Names.ACOS -> { domain(x in -1.0..1.0); fromRad(acos(x)) }
+        Names.ATAN -> fromRad(atan(x))
+        "sinh" -> sinh(x)
+        "cosh" -> cosh(x)
+        "tanh" -> tanh(x)
+        Names.ASINH -> asinh(x)
+        Names.ACOSH -> { domain(x >= 1.0); acosh(x) }
+        Names.ATANH -> { domain(x > -1.0 && x < 1.0); atanh(x) }
+        "ln" -> { domain(x > 0); ln(x) }
+        "log" -> { domain(x > 0); log10(x) }
+        Names.LOG2 -> { domain(x > 0); log2(x) }
+        Names.SQRT -> { domain(x >= 0); sqrt(x) }
+        Names.CBRT -> cbrt(x)
+        Names.ABS -> abs(x)
+        "exp" -> exp(x)
+        "floor" -> floor(x)
+        "ceil" -> ceil(x)
+        "round" -> round(x)
+        "max" -> args.max()
+        "min" -> args.min()
+        "gcd" -> gcd(requireInt(x, "gcd"), requireInt(args[1], "gcd")).toDouble()
+        "lcm" -> {
+            val a = requireInt(x, "lcm")
+            val b = requireInt(args[1], "lcm")
+            if (a == 0L || b == 0L) 0.0 else abs(a / gcd(a, b) * b).toDouble()
         }
-    }
-
-    private fun domain(ok: Boolean) {
-        if (!ok) throw CalcException("Fuera del dominio")
-    }
-
-    /** root(x, n) = raíz n-ésima de x. Admite bases negativas con índice impar. */
-    private fun nthRoot(x: Double, n: Double): Double {
-        if (n == 0.0) throw CalcException("Índice de raíz cero")
-        if (x < 0) {
-            if (isInt(n) && n.toLong() % 2L != 0L) return -abs(x).pow(1.0 / n)
-            throw CalcException("Fuera del dominio")
-        }
-        return x.pow(1.0 / n)
-    }
-
-    private fun pow(base: Double, e: Double): Double {
-        if (base == 0.0 && e < 0) throw CalcException("División por cero")
-        if (base < 0 && !isInt(e)) {
-            // (−8)^(1/3) = −2: si 1/e es un entero impar, es una raíz impar.
-            val inv = 1.0 / e
-            if (isInt(inv) && round(inv).toLong() % 2L != 0L) return -abs(base).pow(e)
-            throw CalcException("Fuera del dominio")
-        }
-        return base.pow(e)
+        Names.ROOT -> nthRoot(x, args[1])
+        Names.NCR -> combinations(x, args[1])
+        Names.NPR -> permutations(x, args[1])
+        else -> throw CalcException("Función desconocida")
     }
 }
 
-private fun isInt(x: Double) = x.isFinite() && abs(x - round(x)) < 1e-9
+private tailrec fun gcd(a: Long, b: Long): Long = if (b == 0L) abs(a) else gcd(b, a % b)
+
+private fun requireInt(x: Double, what: String): Long {
+    if (!isInt(x) || abs(x) > 9e15) throw CalcException("$what necesita enteros")
+    return round(x).toLong()
+}
+
+/** root(x, n) = raíz n-ésima de x. Admite bases negativas con índice impar. */
+private fun nthRoot(x: Double, n: Double): Double {
+    if (n == 0.0) throw CalcException("Índice de raíz cero")
+    if (x < 0) {
+        if (isInt(n) && round(n).toLong() % 2L != 0L) return -abs(x).pow(1.0 / n)
+        throw CalcException("Fuera del dominio")
+    }
+    return x.pow(1.0 / n)
+}
+
+private fun pow(base: Double, e: Double): Double {
+    if (base == 0.0 && e < 0) throw CalcException("División por cero")
+    if (base < 0 && !isInt(e)) {
+        // (−8)^(1/3) = −2: si 1/e es un entero impar, es una raíz impar.
+        val inv = 1.0 / e
+        if (isInt(inv) && round(inv).toLong() % 2L != 0L) return -abs(base).pow(e)
+        throw CalcException("Fuera del dominio")
+    }
+    return base.pow(e)
+}
+
+internal fun isInt(x: Double) = x.isFinite() && abs(x - round(x)) < 1e-9
 
 private fun requireNonNegInt(x: Double, what: String): Long {
     if (!isInt(x) || x < 0) throw CalcException("$what debe ser entero ≥ 0")

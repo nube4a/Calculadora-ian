@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,7 +71,7 @@ private data class Key(
 )
 
 @Composable
-fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit) {
+fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit, onOpenMenu: () -> Unit) {
     val state = vm.state
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -98,7 +99,7 @@ fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit) {
                 .padding(padding)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
-            TopBar(state, onOpenHistory, onCopy = copy)
+            TopBar(vm, state, onOpenHistory, onOpenMenu, onCopy = copy)
             Display(
                 state = state,
                 onCopy = copy,
@@ -113,14 +114,14 @@ fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit) {
                 Row(Modifier.fillMaxWidth().weight(2.2f)) {
                     Column(Modifier.weight(5f).fillMaxHeight()) {
                         KeyRow(memory, Modifier.weight(0.7f))
-                        KeyGrid(sci, Modifier.weight(4f))
+                        KeyGrid(sci, Modifier.weight(5f), compact = true)
                     }
                     Spacer(Modifier.width(8.dp))
                     KeyGrid(basic, Modifier.weight(4f).fillMaxHeight())
                 }
             } else {
                 KeyRow(memory, Modifier.weight(0.38f))
-                KeyGrid(sci, Modifier.weight(2.1f), compact = true)
+                KeyGrid(sci, Modifier.weight(2.6f), compact = true)
                 KeyGrid(basic, Modifier.weight(3.4f))
             }
         }
@@ -128,16 +129,24 @@ fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit) {
 }
 
 @Composable
-private fun TopBar(state: CalcState, onOpenHistory: () -> Unit, onCopy: () -> Unit) {
+private fun TopBar(
+    vm: CalculatorViewModel,
+    state: CalcState,
+    onOpenHistory: () -> Unit,
+    onOpenMenu: () -> Unit,
+    onCopy: () -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        AssistChip(onClick = {}, label = { Text(state.angleMode.name) })
-        if (state.hasMemory) AssistChip(onClick = {}, label = { Text("M") })
-        if (state.second) AssistChip(onClick = {}, label = { Text("2nd") })
-        if (state.hyp) AssistChip(onClick = {}, label = { Text("hyp") })
+        IconButton(onClick = onOpenMenu) {
+            Icon(Icons.Outlined.Menu, contentDescription = "Herramientas")
+        }
+        AssistChip(onClick = { vm.toggleAngle() }, label = { Text(state.angleMode.name) })
+        AssistChip(onClick = { vm.cycleDisplayMode() }, label = { Text(state.displayMode.label) })
+        if (state.hasMemory) Text("M", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onCopy) {
             Icon(Icons.Outlined.ContentCopy, contentDescription = "Copiar resultado")
@@ -200,6 +209,9 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,
         )
+        state.siHint?.let {
+            Text("≈ $it", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
+        }
     }
 }
 
@@ -248,6 +260,18 @@ private fun scientificKeys(vm: CalculatorViewModel, s: CalcState): List<List<Key
             if (inv) Key(",", KeyKind.FUNCTION) { vm.insert(",") }
             else Key("Ans", KeyKind.FUNCTION) { vm.insert(Names.ANS) },
             Key("mod", KeyKind.FUNCTION) { vm.operator(Names.MOD) },
+        ),
+        listOf(
+            if (inv) Key("Π", KeyKind.FUNCTION) { vm.insert("${Names.PROD}(") }
+            else Key("x", KeyKind.FUNCTION) { vm.insert("x") },
+            if (inv) Key("⌊x⌋", KeyKind.FUNCTION) { vm.insert("floor(") }
+            else Key("∫", KeyKind.FUNCTION) { vm.insert("${Names.INTEGRAL}(") },
+            if (inv) Key("⌈x⌉", KeyKind.FUNCTION) { vm.insert("ceil(") }
+            else Key("d/dx", KeyKind.FUNCTION) { vm.insert("${Names.DERIV}(") },
+            if (inv) Key("gcd", KeyKind.FUNCTION) { vm.insert("gcd(") }
+            else Key("Σ", KeyKind.FUNCTION) { vm.insert("${Names.SUM}(") },
+            if (inv) Key("lcm", KeyKind.FUNCTION) { vm.insert("lcm(") }
+            else Key(",", KeyKind.FUNCTION) { vm.insert(",") },
         ),
     )
 }

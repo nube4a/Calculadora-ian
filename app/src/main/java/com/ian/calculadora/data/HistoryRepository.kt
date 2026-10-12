@@ -2,6 +2,7 @@ package com.ian.calculadora.data
 
 import android.content.Context
 import com.ian.calculadora.engine.AngleMode
+import com.ian.calculadora.engine.DisplayMode
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -64,11 +65,20 @@ class HistoryRepository(context: Context) {
         get() = AngleMode.valueOf(prefs.getString(KEY_ANGLE, AngleMode.DEG.name) ?: AngleMode.DEG.name)
         set(value) = prefs.edit().putString(KEY_ANGLE, value.name).apply()
 
+    var displayMode: DisplayMode
+        get() = DisplayMode.entries.firstOrNull { it.name == prefs.getString(KEY_DISPLAY, null) } ?: DisplayMode.NORMAL
+        set(value) = prefs.edit().putString(KEY_DISPLAY, value.name).apply()
+
+    /** Texto guardado de las herramientas (funciones a graficar, datos estadísticos...). */
+    fun getText(key: String, default: String = ""): String = prefs.getString("txt_$key", default) ?: default
+    fun putText(key: String, value: String) = prefs.edit().putString("txt_$key", value).apply()
+
     companion object {
         const val MAX_ITEMS = 500
         private const val KEY_HISTORY = "history"
         private const val KEY_MEMORY = "memory"
         private const val KEY_ANS = "ans"
         private const val KEY_ANGLE = "angle"
+        private const val KEY_DISPLAY = "display"
     }
 }

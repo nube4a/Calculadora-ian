@@ -9,6 +9,7 @@ import com.ian.calculadora.data.HistoryItem
 import com.ian.calculadora.data.HistoryRepository
 import com.ian.calculadora.engine.AngleMode
 import com.ian.calculadora.engine.CalcException
+import com.ian.calculadora.engine.DisplayMode
 import com.ian.calculadora.engine.Evaluator
 import com.ian.calculadora.engine.Names
 import com.ian.calculadora.engine.NumberFormatter
@@ -21,6 +22,9 @@ data class CalcState(
     val result: String? = null,
     val error: String? = null,
     val angleMode: AngleMode = AngleMode.DEG,
+    val displayMode: DisplayMode = DisplayMode.NORMAL,
+    /** Resultado con prefijo SI (4.7 k, 220 µ) en modo ENG. */
+    val siHint: String? = null,
     val second: Boolean = false,
     val hyp: Boolean = false,
     val memory: Double = 0.0,
@@ -39,7 +43,12 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
     private var justEvaluated = false
 
     var state by mutableStateOf(
-        CalcState(angleMode = repo.angleMode, memory = repo.memory, history = repo.loadHistory())
+        CalcState(
+            angleMode = repo.angleMode,
+            displayMode = repo.displayMode,
+            memory = repo.memory,
+            history = repo.loadHistory(),
+        )
     )
         private set
 
@@ -103,7 +112,7 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
     fun backspace() {
         if (justEvaluated) {
             justEvaluated = false
-            update(state.copy(result = null))
+            update(state.copy(result = null, siHint = null))
             return
         }
         val expr = state.expression
@@ -116,7 +125,7 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clear() {
         justEvaluated = false
-        update(state.copy(expression = "", preview = "", result = null, error = null))
+        update(state.copy(expression = "", preview = "", result = null, siHint = null, error = null))
     }
 
     fun equals() {
@@ -141,7 +150,8 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
             update(
                 state.copy(
                     expression = closed,
-                    result = NumberFormatter.group(raw),
+                    result = NumberFormatter.formatGrouped(value, state.displayMode),
+                    siHint = siHint(value),
                     preview = "",
                     error = null,
                     history = history,
@@ -159,6 +169,20 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
         repo.angleMode = mode
         update(state.copy(angleMode = mode), recompute = true)
     }
+
+    fun cycleDisplayMode() {
+        val mode = DisplayMode.entries[(state.displayMode.ordinal + 1) % DisplayMode.entries.size]
+        repo.displayMode = mode
+        val newState = state.copy(displayMode = mode)
+        state = if (justEvaluated) {
+            newState.copy(result = NumberFormatter.formatGrouped(ans, mode), siHint = siHint(ans, mode))
+        } else {
+            newState.copy(preview = preview(newState))
+        }
+    }
+
+    private fun siHint(value: Double, mode: DisplayMode = state.displayMode) =
+        if (mode == DisplayMode.ENG) NumberFormatter.siPrefix(value) else null
 
     fun toggleSecond() = update(state.copy(second = !state.second))
     fun toggleHyp() = update(state.copy(hyp = !state.hyp))
@@ -201,6 +225,20 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
         insert(asOperand(item.result))
     }
 
+    /** Inserta un número (de constantes, herramientas...) como operando. */
+    fun insertValue(value: Double) {
+        insert(asOperand(NumberFormatter.format(value)))
+    }
+
+    fun loadText(key: String, default: String = "") = repo.getText(key, default)
+    fun saveText(key: String, value: String) = repo.putText(key, value)
+
+    /** Reemplaza la expresión (por ejemplo, desde otra herramienta). */
+    fun setExpressionFrom(text: String) {
+        justEvaluated = false
+        setExpression(text)
+    }
+
     fun deleteHistoryItem(item: HistoryItem) {
         val history = state.history.filterNot { it.id == item.id }
         repo.saveHistory(history)
@@ -217,7 +255,7 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Texto del resultado actual (o vista previa) para copiar. */
     fun copyableResult(): String? = when {
-        justEvaluated -> NumberFormatter.format(ans)
+        justEvaluated -> NumberFormatter.format(ans, state.displayMode)
         state.preview.isNotEmpty() -> state.preview.replace(",", "")
         else -> null
     }
@@ -243,7 +281,7 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun setExpression(expr: String) {
-        update(state.copy(expression = expr, result = null, error = null), recompute = true)
+        update(state.copy(expression = expr, result = null, siHint = null, error = null), recompute = true)
     }
 
     private fun update(newState: CalcState, recompute: Boolean = false) {
@@ -255,7 +293,7 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
         // Sin vista previa si es solo un número o si usa Rand (cambiaría en cada tecla).
         if (expr.isBlank() || expr.all { it.isDigit() || it == '.' } || expr.contains(Names.RAND)) return ""
         return try {
-            NumberFormatter.formatGrouped(Evaluator.evaluate(expr, s.angleMode, ans))
+            NumberFormatter.formatGrouped(Evaluator.evaluate(expr, s.angleMode, ans), s.displayMode)
         } catch (e: CalcException) {
             ""
         }
