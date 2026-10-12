@@ -21,6 +21,27 @@ Calculadora científica completa para **Android**, hecha con Kotlin y Jetpack Co
 - Copiar resultado (botón o mantener pulsada la pantalla), vibración al tocar, tema claro/oscuro y
   colores dinámicos (Android 12+), diseño horizontal.
 
+## Escanear y resolver paso a paso (📷)
+
+Toma una foto de una operación o ecuación (o elígela de la galería): el texto se reconoce en el
+teléfono, sin internet (Google ML Kit), y se resuelve **paso a paso**:
+
+```
+14√x + 15 = 71
+Restar 15 en ambos lados:        14√x = 56
+Dividir ambos lados entre 14:    √x = 4
+Elevar al cuadrado ambos lados:  x = 16
+Comprobación:                    14·√16 + 15 = 71 ✓
+```
+
+- **Despeje** de ecuaciones donde x aparece una vez (raíces, potencias, logaritmos, exponenciales,
+  trigonométricas, valor absoluto) con comprobación y descarte de soluciones extrañas.
+- **Polinomios:** lineal, cuadrática (discriminante y fórmula general, raíces complejas), grado 3-4
+  con forma factorizada; detecta identidades y contradicciones.
+- **Numérico** para el resto (por ejemplo `e^x = 3 − x`).
+- Resultados como fracción cuando corresponde (`x = 1/3`), botón para graficar o usar el resultado.
+- También puedes escribir la ecuación a mano en esa pantalla.
+
 ## Herramientas de ingeniería (menú ☰)
 
 - **Gráficas:** hasta 3 funciones a la vez, mover con el dedo, zoom con pellizco, tocar para leer

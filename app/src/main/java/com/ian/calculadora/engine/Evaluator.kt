@@ -261,11 +261,11 @@ internal sealed interface Node {
     fun eval(c: EvalContext): Double
 }
 
-internal class NumNode(private val v: Double) : Node {
+internal class NumNode(val v: Double) : Node {
     override fun eval(c: EvalContext) = v
 }
 
-internal class ConstNode(private val name: String) : Node {
+internal class ConstNode(val name: String) : Node {
     override fun eval(c: EvalContext): Double = when (name) {
         "π" -> PI
         "e" -> Math.E
@@ -280,17 +280,17 @@ internal class NegNode(val n: Node) : Node {
 }
 
 /** x% — el valor ÷ 100, y además permite que 200 + 10% = 220. */
-internal class PctNode(private val n: Node) : Node {
+internal class PctNode(val n: Node) : Node {
     override fun eval(c: EvalContext) = n.eval(c) / 100.0
 }
 
-internal class FactNode(private val n: Node) : Node {
+internal class FactNode(val n: Node) : Node {
     override fun eval(c: EvalContext) = factorial(n.eval(c))
 }
 
 private fun isPct(n: Node): Boolean = n is PctNode || (n is NegNode && isPct(n.n))
 
-internal class BinNode(private val op: Char, private val l: Node, private val r: Node) : Node {
+internal class BinNode(val op: Char, val l: Node, val r: Node) : Node {
     override fun eval(c: EvalContext): Double {
         val a = l.eval(c)
         val b = r.eval(c)
@@ -312,7 +312,7 @@ internal class BinNode(private val op: Char, private val l: Node, private val r:
     }
 }
 
-internal class CallNode(private val name: String, private val args: List<Node>) : Node {
+internal class CallNode(val name: String, val args: List<Node>) : Node {
     override fun eval(c: EvalContext): Double {
         if (name in Names.lazy) return evalCalculus(c)
         val v = args.map { it.eval(c) }

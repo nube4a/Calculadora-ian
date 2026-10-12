@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,7 +72,12 @@ private data class Key(
 )
 
 @Composable
-fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit, onOpenMenu: () -> Unit) {
+fun CalculatorScreen(
+    vm: CalculatorViewModel,
+    onOpenHistory: () -> Unit,
+    onOpenMenu: () -> Unit,
+    onOpenScan: () -> Unit,
+) {
     val state = vm.state
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -99,7 +105,7 @@ fun CalculatorScreen(vm: CalculatorViewModel, onOpenHistory: () -> Unit, onOpenM
                 .padding(padding)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
-            TopBar(vm, state, onOpenHistory, onOpenMenu, onCopy = copy)
+            TopBar(vm, state, onOpenHistory, onOpenMenu, onOpenScan, onCopy = copy)
             Display(
                 state = state,
                 onCopy = copy,
@@ -134,6 +140,7 @@ private fun TopBar(
     state: CalcState,
     onOpenHistory: () -> Unit,
     onOpenMenu: () -> Unit,
+    onOpenScan: () -> Unit,
     onCopy: () -> Unit,
 ) {
     Row(
@@ -148,8 +155,8 @@ private fun TopBar(
         AssistChip(onClick = { vm.cycleDisplayMode() }, label = { Text(state.displayMode.label) })
         if (state.hasMemory) Text("M", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         Spacer(Modifier.weight(1f))
-        IconButton(onClick = onCopy) {
-            Icon(Icons.Outlined.ContentCopy, contentDescription = "Copiar resultado")
+        IconButton(onClick = onOpenScan) {
+            Icon(Icons.Outlined.PhotoCamera, contentDescription = "Escanear operación")
         }
         IconButton(onClick = onOpenHistory) {
             Icon(Icons.Outlined.History, contentDescription = "Historial")

@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.outlined.Functions
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Memory
@@ -45,6 +46,7 @@ import com.ian.calculadora.ui.ConstantsScreen
 import com.ian.calculadora.ui.GraphScreen
 import com.ian.calculadora.ui.HistoryScreen
 import com.ian.calculadora.ui.ProgrammerScreen
+import com.ian.calculadora.ui.ScanScreen
 import com.ian.calculadora.ui.SolverScreen
 import com.ian.calculadora.ui.StatsScreen
 import com.ian.calculadora.ui.UnitsScreen
@@ -53,6 +55,7 @@ import kotlinx.coroutines.launch
 
 enum class Screen(val title: String, val icon: ImageVector) {
     CALC("Calculadora", Icons.Outlined.Calculate),
+    SCAN("Escanear y resolver (paso a paso)", Icons.Outlined.DocumentScanner),
     GRAPH("Gráficas", Icons.Outlined.ShowChart),
     SOLVER("Ecuaciones", Icons.Outlined.Functions),
     UNITS("Conversor de unidades", Icons.Outlined.SwapHoriz),
@@ -122,7 +125,12 @@ class MainActivity : ComponentActivity() {
                                 viewModel,
                                 onOpenHistory = { screen = Screen.HISTORY },
                                 onOpenMenu = { scope.launch { drawer.open() } },
+                                onOpenScan = { screen = Screen.SCAN },
                             )
+                            Screen.SCAN -> ScanScreen(viewModel, onBack = goBack, onGraph = { expr ->
+                                viewModel.saveText("graph_f1", expr)
+                                screen = Screen.GRAPH
+                            })
                             Screen.HISTORY -> HistoryScreen(viewModel, onBack = goBack)
                             Screen.GRAPH -> GraphScreen(viewModel, onBack = goBack)
                             Screen.SOLVER -> SolverScreen(viewModel, onBack = goBack)
