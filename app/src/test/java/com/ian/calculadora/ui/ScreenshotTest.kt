@@ -105,4 +105,17 @@ class ScreenshotTest {
         compose.onNodeWithContentDescription("Historial").performClick()
         shot("13_historial")
     }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi-night")
+    fun modoOscuro() {
+        shot("20_oscuro_bienvenida")
+        key("Saltar")
+        shot("21_oscuro_inicio")
+        keys("2", "sin", "3", "0", ")", "+", "√", "1", "6")
+        key("=")
+        shot("22_oscuro_resultado")
+        compose.onNodeWithContentDescription("Herramientas").performClick()
+        shot("23_oscuro_menu")
+    }
 }
