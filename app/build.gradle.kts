@@ -6,14 +6,28 @@ plugins {
 
 android {
     namespace = "com.ian.calculadora"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ian.calculadora"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 4
         versionName = "3.1"
+    }
+
+    // Firma de subida para Google Play. Los datos vienen de variables de entorno
+    // (secretos de GitHub); nunca se guardan en el repositorio.
+    val keystoreFile = System.getenv("KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (keystoreFile != null) {
+            create("upload") {
+                storeFile = keystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS") ?: "calculadora"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -21,8 +35,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Firmado con la clave de depuración para poder instalarlo directamente.
-            signingConfig = signingConfigs.getByName("debug")
+            // Con la clave de subida si está disponible; si no, la de depuración (para probar el APK).
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
         }
     }
 

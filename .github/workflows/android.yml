@@ -21,8 +21,23 @@ jobs:
       - name: Pruebas del motor de cálculo
         run: ./gradlew testDebugUnitTest --stacktrace
 
-      - name: Compilar APK
-        run: ./gradlew assembleDebug assembleRelease --stacktrace
+      # Si el repositorio tiene el secreto KEYSTORE_BASE64, se firma con la clave de subida.
+      - name: Preparar firma de subida
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "Firma de subida configurada"
+          else
+            echo "Sin secreto KEYSTORE_BASE64: se firma con la clave de depuración"
+          fi
+
+      - name: Compilar APK y AAB (Play Store)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: ./gradlew assembleDebug assembleRelease bundleRelease --stacktrace
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
@@ -31,3 +46,9 @@ jobs:
           path: |
             app/build/outputs/apk/release/*.apk
             app/build/outputs/apk/debug/*.apk
+
+      - name: Subir AAB para Google Play
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculadora-ian-playstore-aab
+          path: app/build/outputs/bundle/release/*.aab
