@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +56,19 @@ jobs:
           name: capturas-de-pantalla
           path: app/build/screenshots/*.png
           if-no-files-found: ignore
+
+      # Copia las capturas a la rama "capturas" para poder verlas sin descargar artefactos.
+      - name: Publicar capturas en la rama capturas
+        if: always() && github.event_name == 'push'
+        run: |
+          if ls app/build/screenshots/*.png >/dev/null 2>&1; then
+            cd app/build/screenshots
+            git init -q
+            git checkout -q -b capturas
+            git add *.png
+            git -c user.name="github-actions" -c user.email="actions@github.com" commit -q -m "Capturas de ${GITHUB_SHA::7}"
+            git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" capturas
+          fi
 
       - name: Subir AAB para Google Play
         uses: actions/upload-artifact@v4

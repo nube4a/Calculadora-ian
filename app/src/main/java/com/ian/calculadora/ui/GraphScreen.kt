@@ -304,7 +304,10 @@ private fun DrawScope.drawLabel(
     at: Offset,
     style: TextStyle,
 ) {
-    drawText(measurer, text, topLeft = at, style = style)
+    // Se mide primero y se omite si no cabe: dibujar texto pegado al borde lanza una excepción.
+    val layout = measurer.measure(text, style)
+    if (at.x < 0 || at.y < 0 || at.x + layout.size.width > size.width || at.y + layout.size.height > size.height) return
+    drawText(layout, topLeft = at)
 }
 
 private fun niceStep(raw: Double): Double {

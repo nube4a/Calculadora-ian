@@ -54,7 +54,13 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             // Capturas de pantalla de la app real (Robolectric + Roborazzi) en build/screenshots.
-            all { it.systemProperty("roborazzi.test.record", "true") }
+            all {
+                it.systemProperty("roborazzi.test.record", "true")
+                it.testLogging {
+                    events("failed")
+                    exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                }
+            }
         }
     }
 }
