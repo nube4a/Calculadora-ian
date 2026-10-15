@@ -51,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -116,7 +117,7 @@ class MainActivity : ComponentActivity() {
                                     Modifier.padding(24.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Box(Modifier.size(52.dp).clip(CircleShape).background(Color(0xFF1E2128))) {
+                                    Box(Modifier.size(52.dp).clip(CircleShape).background(Color(0xFF13203A))) {
                                         Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = null, Modifier.size(52.dp))
                                     }
                                     Text(
@@ -137,7 +138,16 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.padding(horizontal = 12.dp),
                                     )
                                 }
-                                Spacer(Modifier.height(12.dp))
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                val version = remember {
+                                    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
+                                }
+                                Text(
+                                    "Versión ${version ?: "?"}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
+                                )
                             }
                         }
                     },

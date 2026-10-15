@@ -87,13 +87,13 @@ fun WelcomeScreen(onFinish: () -> Unit) {
                     Modifier
                         .size(168.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2128)),
+                        .background(Color(0xFF13203A)),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (page.icon == null) {
                         Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = null, Modifier.size(168.dp))
                     } else {
-                        Icon(page.icon, contentDescription = null, tint = Color(0xFFFFB74D), modifier = Modifier.size(84.dp))
+                        Icon(page.icon, contentDescription = null, tint = Color(0xFF6EA8FF), modifier = Modifier.size(84.dp))
                     }
                 }
                 Spacer(Modifier.height(36.dp))

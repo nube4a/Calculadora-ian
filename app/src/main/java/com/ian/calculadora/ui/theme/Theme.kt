@@ -10,7 +10,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** Colores propios del teclado de la calculadora (los mismos de la marca: naranja sobre grafito). */
+/** Colores propios del teclado: azul para operaciones y =, rojo suave para AC. */
 @Immutable
 class CalcColors(
     val number: Color, val onNumber: Color,
@@ -22,59 +22,60 @@ class CalcColors(
 )
 
 private val DarkCalcColors = CalcColors(
-    number = Color(0xFF23272F), onNumber = Color(0xFFF2F4F8),
-    function = Color(0xFF181C23), onFunction = Color(0xFFA8C7FA),
-    operator = Color(0xFF3A2B12), onOperator = Color(0xFFFFC66D),
-    action = Color(0xFFFFDDB3), onAction = Color(0xFF2A1700),
-    equals = Color(0xFFFFB74D), onEquals = Color(0xFF2A1700),
-    display = Color(0xFF181B21),
+    number = Color(0xFF1C2333), onNumber = Color(0xFFEEF2F8),
+    function = Color(0xFF151C2A), onFunction = Color(0xFFA9C2EE),
+    operator = Color(0xFF1F3563), onOperator = Color(0xFF9DBEFF),
+    action = Color(0xFFFF8A8A), onAction = Color(0xFF3D0A0A),
+    equals = Color(0xFF7FAAFF), onEquals = Color(0xFF071A3D),
+    display = Color(0xFF151C2A),
 )
 
 private val LightCalcColors = CalcColors(
-    number = Color(0xFFE9ECF2), onNumber = Color(0xFF1A1D23),
-    function = Color(0xFFE3EAF6), onFunction = Color(0xFF2B4F86),
-    operator = Color(0xFFFFE2BC), onOperator = Color(0xFF8A4700),
-    action = Color(0xFFFFD08A), onAction = Color(0xFF2A1700),
-    equals = Color(0xFFE67E00), onEquals = Color(0xFFFFFFFF),
+    number = Color(0xFFEDF1F8), onNumber = Color(0xFF1B2330),
+    function = Color(0xFFE6EDF9), onFunction = Color(0xFF2E4F86),
+    operator = Color(0xFFD9E6FF), onOperator = Color(0xFF1F5BD8),
+    action = Color(0xFFFFDADA), onAction = Color(0xFFC62828),
+    equals = Color(0xFF2F6BFF), onEquals = Color(0xFFFFFFFF),
     display = Color(0xFFFFFFFF),
 )
 
 val LocalCalcColors = staticCompositionLocalOf { DarkCalcColors }
 
+/** Azul principal y rojo como acento (borrar, errores). */
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFFFB74D), onPrimary = Color(0xFF2A1700),
-    primaryContainer = Color(0xFF4A3410), onPrimaryContainer = Color(0xFFFFDDB3),
-    secondary = Color(0xFFB8C7E0), onSecondary = Color(0xFF1E2A3A),
-    secondaryContainer = Color(0xFF2B3647), onSecondaryContainer = Color(0xFFDCE6F5),
+    primary = Color(0xFF7FAAFF), onPrimary = Color(0xFF071A3D),
+    primaryContainer = Color(0xFF1F3563), onPrimaryContainer = Color(0xFFD9E6FF),
+    secondary = Color(0xFFFF8A8A), onSecondary = Color(0xFF3D0A0A),
+    secondaryContainer = Color(0xFF4A1E24), onSecondaryContainer = Color(0xFFFFDADA),
     tertiary = Color(0xFF8FD3C0), onTertiary = Color(0xFF00382D),
     tertiaryContainer = Color(0xFF1D3A33), onTertiaryContainer = Color(0xFFC4F0E3),
-    background = Color(0xFF101216), onBackground = Color(0xFFE9EBF0),
-    surface = Color(0xFF101216), onSurface = Color(0xFFE9EBF0),
-    surfaceVariant = Color(0xFF1B1F26), onSurfaceVariant = Color(0xFFB4BAC6),
-    surfaceTint = Color(0xFFFFB74D),
-    surfaceContainerLowest = Color(0xFF0C0E11), surfaceContainerLow = Color(0xFF14171C),
-    surfaceContainer = Color(0xFF181B21), surfaceContainerHigh = Color(0xFF1D2128),
-    surfaceContainerHighest = Color(0xFF232831),
-    outline = Color(0xFF6B7280), outlineVariant = Color(0xFF2C313B),
-    error = Color(0xFFFF8A80), onError = Color(0xFF3B0A06),
+    background = Color(0xFF0E1320), onBackground = Color(0xFFEEF2F8),
+    surface = Color(0xFF0E1320), onSurface = Color(0xFFEEF2F8),
+    surfaceVariant = Color(0xFF1A2130), onSurfaceVariant = Color(0xFFB3BDCE),
+    surfaceTint = Color(0xFF7FAAFF),
+    surfaceContainerLowest = Color(0xFF0A0E18), surfaceContainerLow = Color(0xFF121827),
+    surfaceContainer = Color(0xFF161D2C), surfaceContainerHigh = Color(0xFF1B2333),
+    surfaceContainerHighest = Color(0xFF212A3C),
+    outline = Color(0xFF6B7690), outlineVariant = Color(0xFF283147),
+    error = Color(0xFFFF8A8A), onError = Color(0xFF3D0A0A),
 )
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFFE67E00), onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFE2BC), onPrimaryContainer = Color(0xFF2A1700),
-    secondary = Color(0xFF4B5D78), onSecondary = Color.White,
-    secondaryContainer = Color(0xFFDCE6F7), onSecondaryContainer = Color(0xFF14233A),
+    primary = Color(0xFF2F6BFF), onPrimary = Color.White,
+    primaryContainer = Color(0xFFD9E6FF), onPrimaryContainer = Color(0xFF0A2A6B),
+    secondary = Color(0xFFD93636), onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFDADA), onSecondaryContainer = Color(0xFF5A0F0F),
     tertiary = Color(0xFF1F7A66), onTertiary = Color.White,
     tertiaryContainer = Color(0xFFC4F0E3), onTertiaryContainer = Color(0xFF00382D),
-    background = Color(0xFFF5F6F9), onBackground = Color(0xFF1A1D23),
-    surface = Color(0xFFF5F6F9), onSurface = Color(0xFF1A1D23),
-    surfaceVariant = Color(0xFFE9ECF2), onSurfaceVariant = Color(0xFF4A505C),
-    surfaceTint = Color(0xFFE67E00),
-    surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF0F2F6),
-    surfaceContainer = Color(0xFFEBEEF3), surfaceContainerHigh = Color(0xFFE5E8EE),
-    surfaceContainerHighest = Color(0xFFDFE3EA),
-    outline = Color(0xFF7A8190), outlineVariant = Color(0xFFD3D8E1),
-    error = Color(0xFFC0392B), onError = Color.White,
+    background = Color(0xFFF7F9FC), onBackground = Color(0xFF1B2330),
+    surface = Color(0xFFF7F9FC), onSurface = Color(0xFF1B2330),
+    surfaceVariant = Color(0xFFEAEFF7), onSurfaceVariant = Color(0xFF4A5468),
+    surfaceTint = Color(0xFF2F6BFF),
+    surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF1F4FA),
+    surfaceContainer = Color(0xFFEBF0F8), surfaceContainerHigh = Color(0xFFE5EBF5),
+    surfaceContainerHighest = Color(0xFFDFE6F2),
+    outline = Color(0xFF7A8499), outlineVariant = Color(0xFFD3DAE6),
+    error = Color(0xFFD93636), onError = Color.White,
 )
 
 @Composable

@@ -60,7 +60,7 @@ import kotlin.math.floor
 import kotlin.math.log10
 import kotlin.math.pow
 
-private val curveColors = listOf(Color(0xFFFF9800), Color(0xFF42A5F5), Color(0xFF66BB6A))
+private val curveColors = listOf(Color(0xFF2F6BFF), Color(0xFFE53935), Color(0xFF43A047))
 
 private data class Marker(val label: String, val x: Double, val y: Double)
 
