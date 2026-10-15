@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Logo: raíz cuadrada con x (√x). Dentro de la zona segura del ícono adaptable. -->
+<!-- Logo: calculadora con √x en la pantalla. Dentro de la zona segura del ícono adaptable. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <path android:fillColor="#FFB74D" android:pathData="M41,28h26a7,7 0 0 1 7,7v38a7,7 0 0 1 -7,7h-26a7,7 0 0 1 -7,-7v-38a7,7 0 0 1 7,-7z" />
+    <path android:fillColor="#1E2128" android:pathData="M41.5,32h25a3,3 0 0 1 3,3v8a3,3 0 0 1 -3,3h-25a3,3 0 0 1 -3,-3v-8a3,3 0 0 1 3,-3z" />
     <path
-        android:pathData="M29,57L35,53L45,71L58,35H81"
+        android:pathData="M41,40L43,38.5L46.5,43.5L50,34H66"
         android:strokeColor="#FFB74D"
-        android:strokeWidth="6"
+        android:strokeWidth="2.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <path
-        android:pathData="M63,46L76,63M76,46L63,63"
+        android:pathData="M54,37L60,43M60,37L54,43"
         android:strokeColor="#E8EAF0"
-        android:strokeWidth="5"
+        android:strokeWidth="2.4"
         android:strokeLineCap="round" />
+    <path android:fillColor="#1E2128" android:pathData="M40.3,51h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M51.55,51h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M62.8,51h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M40.3,61h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M51.55,61h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M62.8,61h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M40.3,71h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z M51.55,71h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z" />
+    <path android:fillColor="#E8EAF0" android:pathData="M62.8,71h4.9a1.8,1.8 0 0 1 1.8,1.8v2.9a1.8,1.8 0 0 1 -1.8,1.8h-4.9a1.8,1.8 0 0 1 -1.8,-1.8v-2.9a1.8,1.8 0 0 1 1.8,-1.8z" />
 </vector>
