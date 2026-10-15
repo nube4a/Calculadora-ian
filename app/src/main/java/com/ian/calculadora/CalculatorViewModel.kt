@@ -92,6 +92,15 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
         setExpression(startFresh() + text)
     }
 
+    /** Un solo botón "( )": cierra un paréntesis si hay alguno abierto y tiene sentido, si no abre uno. */
+    fun smartParen() {
+        val expr = if (justEvaluated) "" else state.expression
+        val last = expr.trimEnd().lastOrNull()
+        val closes = Evaluator.openParens(expr) > 0 && last != null &&
+            (last.isDigit() || last in ").!%πex" || expr.endsWith(Names.ANS) || expr.endsWith(Names.RAND))
+        insert(if (closes) ")" else "(")
+    }
+
     fun toggleSign() {
         if (justEvaluated) {
             justEvaluated = false

@@ -5,31 +5,34 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Backspace
-import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PhotoCamera
@@ -43,14 +46,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.graphics.graphicsLayer
-import com.ian.calculadora.ui.theme.LocalCalcColors
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -61,12 +65,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ian.calculadora.CalcState
 import com.ian.calculadora.CalculatorViewModel
 import com.ian.calculadora.engine.AngleMode
 import com.ian.calculadora.engine.Names
+import com.ian.calculadora.ui.theme.LocalCalcColors
 
 private enum class KeyKind { NUMBER, OPERATOR, FUNCTION, ACTION, EQUALS, MEMORY }
 
@@ -90,6 +96,12 @@ fun CalculatorScreen(
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // Panel científico plegable (se recuerda entre sesiones).
+    var expanded by rememberSaveable { mutableStateOf(vm.loadText("sci_expanded") == "1") }
+    val toggleExpanded = {
+        expanded = !expanded
+        vm.saveText("sci_expanded", if (expanded) "1" else "0")
+    }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -111,15 +123,15 @@ fun CalculatorScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
-            TopBar(vm, state, onOpenHistory, onOpenMenu, onOpenScan, onCopy = copy)
+            TopBar(vm, state, onOpenHistory, onOpenMenu, onOpenScan)
             Display(
                 state = state,
                 onCopy = copy,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(if (landscape) 0.8f else 1f),
+                    .weight(1f),
             )
             val sci = scientificKeys(vm, state)
             val basic = basicKeys(vm)
@@ -127,16 +139,27 @@ fun CalculatorScreen(
             if (landscape) {
                 Row(Modifier.fillMaxWidth().weight(2.2f)) {
                     Column(Modifier.weight(5f).fillMaxHeight()) {
-                        KeyRow(memory, Modifier.weight(0.7f))
-                        KeyGrid(sci, Modifier.weight(5f), compact = true)
+                        KeyRow(memory, Modifier.weight(0.6f), small = true)
+                        sci.forEach { KeyRow(it, Modifier.weight(1f), small = true) }
                     }
-                    Spacer(Modifier.width(8.dp))
-                    KeyGrid(basic, Modifier.weight(4f).fillMaxHeight())
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(4f).fillMaxHeight()) {
+                        basic.forEach { KeyRow(it, Modifier.weight(1f)) }
+                    }
                 }
             } else {
-                KeyRow(memory, Modifier.weight(0.38f))
-                KeyGrid(sci, Modifier.weight(2.6f), compact = true)
-                KeyGrid(basic, Modifier.weight(3.4f))
+                ExpandToggle(expanded, state.hasMemory, toggleExpanded)
+                if (expanded) {
+                    // Desplegado: teclas en forma de píldora para que todo quepa.
+                    Column(Modifier.fillMaxWidth().weight(2.4f)) {
+                        KeyRow(memory, Modifier.weight(0.55f), small = true)
+                        sci.forEach { KeyRow(it, Modifier.weight(0.8f), small = true) }
+                        basic.forEach { KeyRow(it, Modifier.weight(1f)) }
+                    }
+                } else {
+                    // Plegado: botones redondos, cada fila tan alta como ancha es cada tecla.
+                    basic.forEach { KeyRow(it, Modifier.aspectRatio(4f)) }
+                }
             }
         }
     }
@@ -149,46 +172,60 @@ private fun TopBar(
     onOpenHistory: () -> Unit,
     onOpenMenu: () -> Unit,
     onOpenScan: () -> Unit,
-    onCopy: () -> Unit,
 ) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         IconButton(onClick = onOpenMenu) {
-            Icon(Icons.Outlined.Menu, contentDescription = "Herramientas")
+            Icon(Icons.Outlined.Menu, contentDescription = "Herramientas", tint = muted)
         }
-        ModePill(state.angleMode.name) { vm.toggleAngle() }
-        ModePill(state.displayMode.label) { vm.cycleDisplayMode() }
-        if (state.hasMemory) ModePill("M", highlighted = true) { vm.memoryRecall() }
+        ModeText(state.angleMode.name) { vm.toggleAngle() }
+        ModeText(state.displayMode.label) { vm.cycleDisplayMode() }
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onOpenScan) {
-            Icon(Icons.Outlined.PhotoCamera, contentDescription = "Escanear operación")
+            Icon(Icons.Outlined.PhotoCamera, contentDescription = "Escanear operación", tint = muted)
         }
         IconButton(onClick = onOpenHistory) {
-            Icon(Icons.Outlined.History, contentDescription = "Historial")
+            Icon(Icons.Outlined.History, contentDescription = "Historial", tint = muted)
         }
     }
 }
 
+/** Indicador discreto (DEG, NORM…) que cambia al tocarlo. */
 @Composable
-private fun ModePill(text: String, highlighted: Boolean = false, onClick: () -> Unit) {
-    val c = LocalCalcColors.current
-    Box(
-        Modifier
+private fun ModeText(text: String, onClick: () -> Unit) {
+    Text(
+        text,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (highlighted) c.equals else c.function)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 7.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    )
+}
+
+@Composable
+private fun ExpandToggle(expanded: Boolean, hasMemory: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(40.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text,
-            color = if (highlighted) c.onEquals else c.onFunction,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
+        IconButton(onClick = onToggle) {
+            Icon(
+                if (expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+                contentDescription = "Funciones científicas",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (hasMemory) {
+            Text("M", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
     }
 }
 
@@ -207,19 +244,21 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
     val scroll = rememberScrollState()
     LaunchedEffect(state.expression) { scroll.animateScrollTo(scroll.maxValue) }
     val exprSize = when (state.expression.length) {
-        in 0..10 -> 44.sp
-        in 11..16 -> 36.sp
-        in 17..24 -> 30.sp
-        else -> 26.sp
+        in 0..9 -> 60.sp
+        in 10..13 -> 48.sp
+        in 14..18 -> 38.sp
+        else -> 30.sp
     }
     val ghost = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
     Column(
         modifier
-            .clip(RoundedCornerShape(28.dp))
-            .background(LocalCalcColors.current.display)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(28.dp))
-            .combinedClickable(onClick = {}, onLongClick = onCopy)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {},
+                onLongClick = onCopy,
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End,
     ) {
@@ -228,7 +267,7 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
             Text(
                 greeting(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 16.sp,
+                fontSize = 15.sp,
                 modifier = Modifier.align(Alignment.Start),
             )
             Spacer(Modifier.weight(1f))
@@ -238,27 +277,28 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
                 append(state.expression.ifEmpty { "0" })
                 withStyle(SpanStyle(color = ghost)) { append(")".repeat(state.openParens)) }
             },
-            fontSize = if (finished) 24.sp else exprSize,
+            fontSize = if (finished) 30.sp else exprSize,
+            fontWeight = FontWeight.Light,
             color = if (finished) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             softWrap = false,
             modifier = Modifier.horizontalScroll(scroll),
         )
-        Spacer(Modifier.padding(top = 4.dp))
+        Spacer(Modifier.height(6.dp))
         val (text, color, size) = when {
             state.error != null -> Triple(state.error.orEmpty(), MaterialTheme.colorScheme.error, 22.sp)
             state.result != null -> Triple(
-                "= ${state.result}",
+                state.result.orEmpty(),
                 MaterialTheme.colorScheme.primary,
-                if (state.result.orEmpty().length > 14) 34.sp else 48.sp,
+                if (state.result.orEmpty().length > 12) 44.sp else 64.sp,
             )
-            else -> Triple(state.preview, MaterialTheme.colorScheme.onSurfaceVariant, 26.sp)
+            else -> Triple(state.preview, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), 28.sp)
         }
         Text(
             text = text,
             color = color,
             fontSize = size,
-            fontWeight = if (state.result != null) FontWeight.SemiBold else FontWeight.Normal,
+            fontWeight = if (state.result != null) FontWeight.Normal else FontWeight.Light,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,
@@ -277,11 +317,11 @@ private fun scientificKeys(vm: CalculatorViewModel, s: CalcState): List<List<Key
     fun trig(base: String) = base + h + if (inv) "⁻¹" else ""
     return listOf(
         listOf(
-            Key("2nd", KeyKind.ACTION, active = inv) { vm.toggleSecond() },
-            Key("hyp", KeyKind.ACTION, active = s.hyp) { vm.toggleHyp() },
-            Key(if (s.angleMode == AngleMode.DEG) "DEG" else "RAD", KeyKind.ACTION) { vm.toggleAngle() },
-            Key("(", KeyKind.FUNCTION) { vm.insert("(") },
-            Key(")", KeyKind.FUNCTION) { vm.insert(")") },
+            Key("2nd", KeyKind.FUNCTION, active = inv) { vm.toggleSecond() },
+            Key("hyp", KeyKind.FUNCTION, active = s.hyp) { vm.toggleHyp() },
+            Key(if (s.angleMode == AngleMode.DEG) "Deg" else "Rad", KeyKind.FUNCTION) { vm.toggleAngle() },
+            Key("±", KeyKind.FUNCTION) { vm.toggleSign() },
+            Key(",", KeyKind.FUNCTION) { vm.insert(",") },
         ),
         listOf(
             trig("sin").let { Key(it, KeyKind.FUNCTION) { vm.insert("$it(") } },
@@ -311,21 +351,19 @@ private fun scientificKeys(vm: CalculatorViewModel, s: CalcState): List<List<Key
             else Key("e", KeyKind.FUNCTION) { vm.insert("e") },
             if (inv) Key("nPr", KeyKind.FUNCTION) { vm.insert("${Names.NPR}(") }
             else Key("EXP", KeyKind.FUNCTION) { vm.digit("E") },
-            if (inv) Key(",", KeyKind.FUNCTION) { vm.insert(",") }
-            else Key("Ans", KeyKind.FUNCTION) { vm.insert(Names.ANS) },
+            Key("Ans", KeyKind.FUNCTION) { vm.insert(Names.ANS) },
             Key("mod", KeyKind.FUNCTION) { vm.operator(Names.MOD) },
         ),
         listOf(
-            if (inv) Key("Π", KeyKind.FUNCTION) { vm.insert("${Names.PROD}(") }
-            else Key("x", KeyKind.FUNCTION) { vm.insert("x") },
             if (inv) Key("⌊x⌋", KeyKind.FUNCTION) { vm.insert("floor(") }
-            else Key("∫", KeyKind.FUNCTION) { vm.insert("${Names.INTEGRAL}(") },
+            else Key("x", KeyKind.FUNCTION) { vm.insert("x") },
             if (inv) Key("⌈x⌉", KeyKind.FUNCTION) { vm.insert("ceil(") }
-            else Key("d/dx", KeyKind.FUNCTION) { vm.insert("${Names.DERIV}(") },
+            else Key("∫", KeyKind.FUNCTION) { vm.insert("${Names.INTEGRAL}(") },
             if (inv) Key("gcd", KeyKind.FUNCTION) { vm.insert("gcd(") }
-            else Key("Σ", KeyKind.FUNCTION) { vm.insert("${Names.SUM}(") },
+            else Key("d/dx", KeyKind.FUNCTION) { vm.insert("${Names.DERIV}(") },
             if (inv) Key("lcm", KeyKind.FUNCTION) { vm.insert("lcm(") }
-            else Key(",", KeyKind.FUNCTION) { vm.insert(",") },
+            else Key("Σ", KeyKind.FUNCTION) { vm.insert("${Names.SUM}(") },
+            Key("Π", KeyKind.FUNCTION) { vm.insert("${Names.PROD}(") },
         ),
     )
 }
@@ -336,9 +374,7 @@ private fun basicKeys(vm: CalculatorViewModel): List<List<Key>> {
     return listOf(
         listOf(
             Key("AC", KeyKind.ACTION) { vm.clear() },
-            Key("⌫", KeyKind.ACTION, icon = Icons.AutoMirrored.Outlined.Backspace, onLongClick = { vm.clear() }) {
-                vm.backspace()
-            },
+            Key("( )", KeyKind.OPERATOR) { vm.smartParen() },
             Key("%", KeyKind.OPERATOR) { vm.postfix("%") },
             op("÷"),
         ),
@@ -346,9 +382,11 @@ private fun basicKeys(vm: CalculatorViewModel): List<List<Key>> {
         listOf(num("4"), num("5"), num("6"), Key("−", KeyKind.OPERATOR) { vm.operator("−") }),
         listOf(num("1"), num("2"), num("3"), op("+")),
         listOf(
-            Key("±", KeyKind.NUMBER) { vm.toggleSign() },
             num("0"),
             num("."),
+            Key("⌫", KeyKind.NUMBER, icon = Icons.AutoMirrored.Outlined.Backspace, onLongClick = { vm.clear() }) {
+                vm.backspace()
+            },
             Key("=", KeyKind.EQUALS) { vm.equals() },
         ),
     )
@@ -365,25 +403,19 @@ private fun memoryKeys(vm: CalculatorViewModel, s: CalcState) = listOf(
 // ---------- Componentes de teclado ----------
 
 @Composable
-private fun KeyGrid(rows: List<List<Key>>, modifier: Modifier, compact: Boolean = false) {
-    Column(modifier) {
-        rows.forEach { KeyRow(it, Modifier.weight(1f), compact) }
-    }
-}
-
-@Composable
-private fun KeyRow(keys: List<Key>, modifier: Modifier, compact: Boolean = false) {
+private fun KeyRow(keys: List<Key>, modifier: Modifier, small: Boolean = false) {
     Row(modifier.fillMaxWidth()) {
-        keys.forEach { KeyButton(it, compact) }
+        keys.forEach { KeyButton(it, small) }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RowScope.KeyButton(key: Key, compact: Boolean) {
+private fun RowScope.KeyButton(key: Key, small: Boolean) {
     val view = LocalView.current
     val c = LocalCalcColors.current
     val (bg, fg) = when {
+        key.active && key.kind == KeyKind.MEMORY -> Color.Transparent to MaterialTheme.colorScheme.primary
         key.active -> c.equals to c.onEquals
         else -> when (key.kind) {
             KeyKind.NUMBER -> c.number to c.onNumber
@@ -397,20 +429,21 @@ private fun RowScope.KeyButton(key: Key, compact: Boolean) {
     // La tecla se "hunde" un poco al tocarla.
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, label = "tecla")
-    val fontSize = when {
+    val scale by animateFloatAsState(if (pressed) 0.9f else 1f, label = "tecla")
+    val fontSize: TextUnit = when {
         key.kind == KeyKind.MEMORY -> 14.sp
-        compact -> if (key.label.length > 3) 14.sp else 17.sp
-        key.kind == KeyKind.NUMBER || key.kind == KeyKind.OPERATOR || key.kind == KeyKind.EQUALS -> 28.sp
-        else -> 22.sp
+        small -> if (key.label.length > 3) 14.sp else 17.sp
+        key.label.length > 2 -> 24.sp
+        else -> 32.sp
     }
     Box(
         Modifier
             .weight(1f)
             .fillMaxHeight()
-            .padding(if (compact || key.kind == KeyKind.MEMORY) 3.dp else 4.dp)
+            .padding(if (small) 3.dp else 5.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clip(RoundedCornerShape(if (compact) 14.dp else 26.dp))
+            // 50 % de redondeo: círculo si la tecla es cuadrada, píldora si es más ancha que alta.
+            .clip(RoundedCornerShape(50))
             .background(bg)
             .combinedClickable(
                 interactionSource = interaction,
@@ -435,11 +468,7 @@ private fun RowScope.KeyButton(key: Key, compact: Boolean) {
                 key.label,
                 color = fg,
                 fontSize = fontSize,
-                fontWeight = when (key.kind) {
-                    KeyKind.FUNCTION, KeyKind.MEMORY -> FontWeight.Normal
-                    KeyKind.EQUALS, KeyKind.ACTION -> FontWeight.SemiBold
-                    else -> FontWeight.Medium
-                },
+                fontWeight = if (key.kind == KeyKind.ACTION || key.kind == KeyKind.EQUALS) FontWeight.Medium else FontWeight.Normal,
                 maxLines = 1,
             )
         }

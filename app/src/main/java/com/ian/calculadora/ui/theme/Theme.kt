@@ -25,16 +25,16 @@ private val DarkCalcColors = CalcColors(
     number = Color(0xFF23272F), onNumber = Color(0xFFF2F4F8),
     function = Color(0xFF181C23), onFunction = Color(0xFFA8C7FA),
     operator = Color(0xFF3A2B12), onOperator = Color(0xFFFFC66D),
-    action = Color(0xFF2B2E36), onAction = Color(0xFFFF9E80),
+    action = Color(0xFFFFDDB3), onAction = Color(0xFF2A1700),
     equals = Color(0xFFFFB74D), onEquals = Color(0xFF2A1700),
     display = Color(0xFF181B21),
 )
 
 private val LightCalcColors = CalcColors(
-    number = Color(0xFFFFFFFF), onNumber = Color(0xFF1A1D23),
+    number = Color(0xFFE9ECF2), onNumber = Color(0xFF1A1D23),
     function = Color(0xFFE3EAF6), onFunction = Color(0xFF2B4F86),
     operator = Color(0xFFFFE2BC), onOperator = Color(0xFF8A4700),
-    action = Color(0xFFECEEF3), onAction = Color(0xFFC0392B),
+    action = Color(0xFFFFD08A), onAction = Color(0xFF2A1700),
     equals = Color(0xFFE67E00), onEquals = Color(0xFFFFFFFF),
     display = Color(0xFFFFFFFF),
 )

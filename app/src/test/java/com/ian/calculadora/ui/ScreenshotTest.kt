@@ -38,6 +38,16 @@ class ScreenshotTest {
 
     private fun keys(vararg labels: String) = labels.forEach { key(it) }
 
+    private fun sciVisible() = compose.onAllNodes(hasText("sin") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()
+
+    /** Abre o cierra el panel científico hasta dejarlo como se pide. */
+    private fun setScientific(open: Boolean) {
+        if (sciVisible() != open) {
+            compose.onNodeWithContentDescription("Funciones científicas").performClick()
+            compose.waitForIdle()
+        }
+    }
+
     private fun back() {
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
@@ -59,8 +69,13 @@ class ScreenshotTest {
         key("Siguiente")
         shot("00_bienvenida_3")
         key("Empezar")
-        shot("00_calculadora_inicio")
-        keys("2", "sin", "3", "0", ")", "+", "√", "1", "6")
+        setScientific(false)
+        keys("1", "6", "×", "( )", "0", ".", "5", "+", "2", ".", "5", "( )")
+        shot("00_calculadora_minimal")
+        key("AC")
+        setScientific(true)
+        shot("00_cientifica_abierta")
+        keys("2", "sin", "3", "0", "( )", "+", "√", "1", "6")
         shot("01_calculadora_escribiendo")
         key("=")
         shot("02_resultado")
@@ -109,9 +124,14 @@ class ScreenshotTest {
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp-night-xxhdpi")
     fun modoOscuro() {
-        // La bienvenida ya quedó marcada como vista en la prueba anterior.
-        shot("21_oscuro_inicio")
-        keys("2", "sin", "3", "0", ")", "+", "√", "1", "6")
+        // La bienvenida puede haber quedado marcada como vista en la prueba anterior.
+        if (compose.onAllNodes(hasText("Saltar") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()) key("Saltar")
+        setScientific(false)
+        keys("1", "6", "×", "( )", "0", ".", "5", "+", "2", ".", "5", "( )")
+        shot("21_oscuro_minimal")
+        key("AC")
+        setScientific(true)
+        keys("2", "sin", "3", "0", "( )", "+", "√", "1", "6")
         key("=")
         shot("22_oscuro_resultado")
         compose.onNodeWithContentDescription("Herramientas").performClick()
