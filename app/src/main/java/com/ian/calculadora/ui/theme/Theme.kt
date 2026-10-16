@@ -34,19 +34,19 @@ private val LightCalcColors = CalcColors(
     number = Color(0xFFEDF1F8), onNumber = Color(0xFF1B2330),
     function = Color(0xFFE6EDF9), onFunction = Color(0xFF2E4F86),
     operator = Color(0xFFD9E6FF), onOperator = Color(0xFF1F5BD8),
-    action = Color(0xFFFFDADA), onAction = Color(0xFFC62828),
+    action = Color(0xFFFFDADA), onAction = Color(0xFFB71C1C),
     equals = Color(0xFF2F6BFF), onEquals = Color(0xFFFFFFFF),
     display = Color(0xFFFFFFFF),
 )
 
 val LocalCalcColors = staticCompositionLocalOf { DarkCalcColors }
 
-/** Azul principal y rojo como acento (borrar, errores). */
+/** Azul principal (y para lo seleccionado); el rojo se reserva para borrar (AC) y errores. */
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF7FAAFF), onPrimary = Color(0xFF071A3D),
     primaryContainer = Color(0xFF1F3563), onPrimaryContainer = Color(0xFFD9E6FF),
-    secondary = Color(0xFFFF8A8A), onSecondary = Color(0xFF3D0A0A),
-    secondaryContainer = Color(0xFF4A1E24), onSecondaryContainer = Color(0xFFFFDADA),
+    secondary = Color(0xFFAFC4EC), onSecondary = Color(0xFF102A55),
+    secondaryContainer = Color(0xFF24324D), onSecondaryContainer = Color(0xFFD9E6FF),
     tertiary = Color(0xFF8FD3C0), onTertiary = Color(0xFF00382D),
     tertiaryContainer = Color(0xFF1D3A33), onTertiaryContainer = Color(0xFFC4F0E3),
     background = Color(0xFF0E1320), onBackground = Color(0xFFEEF2F8),
@@ -63,8 +63,8 @@ private val DarkColors = darkColorScheme(
 private val LightColors = lightColorScheme(
     primary = Color(0xFF2F6BFF), onPrimary = Color.White,
     primaryContainer = Color(0xFFD9E6FF), onPrimaryContainer = Color(0xFF0A2A6B),
-    secondary = Color(0xFFD93636), onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFDADA), onSecondaryContainer = Color(0xFF5A0F0F),
+    secondary = Color(0xFF4A5F86), onSecondary = Color.White,
+    secondaryContainer = Color(0xFFDCE6F8), onSecondaryContainer = Color(0xFF102A55),
     tertiary = Color(0xFF1F7A66), onTertiary = Color.White,
     tertiaryContainer = Color(0xFFC4F0E3), onTertiaryContainer = Color(0xFF00382D),
     background = Color(0xFFF7F9FC), onBackground = Color(0xFF1B2330),

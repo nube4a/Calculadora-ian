@@ -126,17 +126,41 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.padding(start = 14.dp),
                                     )
                                 }
-                                Screen.entries.forEach { s ->
-                                    NavigationDrawerItem(
-                                        icon = { Icon(s.icon, contentDescription = null) },
-                                        label = { Text(s.title) },
-                                        selected = s == screen,
-                                        onClick = {
-                                            screen = s
-                                            scope.launch { drawer.close() }
-                                        },
-                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                // Herramientas agrupadas por tema para encontrarlas más rápido.
+                                listOf(
+                                    "Calcular" to listOf(Screen.CALC, Screen.SCAN, Screen.HISTORY),
+                                    "Matemáticas" to listOf(Screen.GRAPH, Screen.ALGEBRA, Screen.SOLVER, Screen.STATS),
+                                    "Ingeniería" to listOf(Screen.UNITS, Screen.PROGRAMMER, Screen.CONSTANTS),
+                                ).forEachIndexed { index, (section, items) ->
+                                    if (index > 0) {
+                                        androidx.compose.material3.HorizontalDivider(
+                                            Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                        )
+                                    }
+                                    Text(
+                                        section,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(start = 28.dp, top = 8.dp, bottom = 6.dp),
                                     )
+                                    items.forEach { s ->
+                                        NavigationDrawerItem(
+                                            icon = { Icon(s.icon, contentDescription = null) },
+                                            label = { Text(s.title) },
+                                            selected = s == screen,
+                                            onClick = {
+                                                screen = s
+                                                scope.launch { drawer.close() }
+                                            },
+                                            colors = androidx.compose.material3.NavigationDrawerItemDefaults.colors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                                selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 12.dp),
+                                        )
+                                    }
                                 }
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 val version = remember {

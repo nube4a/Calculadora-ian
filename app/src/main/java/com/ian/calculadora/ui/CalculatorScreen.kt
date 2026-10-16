@@ -152,7 +152,7 @@ fun CalculatorScreen(
                 if (expanded) {
                     // Desplegado: teclas en forma de píldora para que todo quepa.
                     Column(Modifier.fillMaxWidth().weight(2.4f)) {
-                        KeyRow(memory, Modifier.weight(0.55f), small = true)
+                        KeyRow(memory, Modifier.weight(0.7f), small = true)
                         sci.forEach { KeyRow(it, Modifier.weight(0.8f), small = true) }
                         basic.forEach { KeyRow(it, Modifier.weight(1f)) }
                     }
