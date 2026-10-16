@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.printToLog
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -77,8 +77,10 @@ class ScreenshotTest {
     @Test
     fun recorrido() {
         // Bienvenida (primera vez)
-        android.util.Log.e("DIAG", "prefs=" + RuntimeEnvironment.getApplication().getSharedPreferences("calculadora", 0).all)
-        compose.onRoot().printToLog("DIAG")
+        val prefsNow = RuntimeEnvironment.getApplication().getSharedPreferences("calculadora", 0).all
+        check(prefsNow.isEmpty() && compose.onAllNodes(hasText("Siguiente")).fetchSemanticsNodes().isNotEmpty()) {
+            "DIAG prefs=$prefsNow ; arbol=" + compose.onRoot().printToString(maxDepth = 3).take(1500)
+        }
         shot("00_bienvenida_1")
         key("Siguiente")
         shot("00_bienvenida_2")
