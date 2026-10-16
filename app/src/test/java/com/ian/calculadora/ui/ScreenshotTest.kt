@@ -90,9 +90,10 @@ class ScreenshotTest {
 
         compose.onNodeWithContentDescription("Herramientas").performClick()
         shot("04_menu_herramientas")
-        compose.onNodeWithText("Escanear y resolver (paso a paso)").performClick()
-        compose.waitForIdle()
         compose.onNodeWithText("Resolver paso a paso").performClick()
+        compose.waitForIdle()
+        shot("05_teclado_matematico")
+        compose.onAllNodes(hasText("Resolver") and hasClickAction()).onFirst().performClick()
         shot("05_escanear")
         compose.onNodeWithText("Pasos").performScrollTo()
         shot("06_paso_a_paso")

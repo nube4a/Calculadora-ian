@@ -18,6 +18,11 @@ class StepSolverTest {
         assertEquals("√x = 4", math[2])
         assertEquals("x = 16", math[3])
         assertTrue(math.last().endsWith("✓"))
+        // Cada paso explica por qué se hace.
+        assertTrue(sol.steps.all { it.explanation.isNotBlank() })
+        assertTrue(StepSolver.explainMethod(sol.method).isNotBlank())
+        assertEquals(listOf(4.0), StepSolver.solve("2x+3=11").values)
+        assertTrue(StepSolver.solve("x^2−5x+6=0").steps.all { it.explanation.isNotBlank() })
         sol.steps.forEach { println("${it.title}:  ${it.math}") }
     }
 

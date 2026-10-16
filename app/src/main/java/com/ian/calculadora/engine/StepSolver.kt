@@ -13,7 +13,10 @@ import kotlin.math.sinh
 import kotlin.math.sqrt
 import kotlin.math.tanh
 
-data class SolveStep(val title: String, val math: String)
+data class SolveStep(val title: String, val math: String) {
+    /** Por qué se hace este paso, en palabras sencillas. */
+    val explanation: String get() = StepSolver.explain(title)
+}
 
 data class StepSolution(
     val method: String,
@@ -89,8 +92,68 @@ object StepSolver {
         is PctNode -> containsX(n.n)
         is FactNode -> containsX(n.n)
         is BinNode -> containsX(n.l) || containsX(n.r)
-        is CallNode -> n.args.any { containsX(it) }
+        // En ∫, d/dx, Σ y Π la x es interna: la expresión no depende de una x externa.
+        is CallNode -> (if (n.name in Names.lazy) n.args.drop(1) else n.args).any { containsX(it) }
         is NumNode -> false
+    }
+
+    /** Explicación general del método usado. */
+    fun explainMethod(method: String): String = when {
+        method == "Despeje" -> "La x aparece una sola vez, así que la despejamos: deshacemos las operaciones de afuera hacia adentro, haciendo lo mismo en ambos lados del =."
+        method == "Ecuación lineal" -> "Es de primer grado (ax + b = 0): juntamos los términos con x en un lado y los números en el otro."
+        method == "Ecuación cuadrática" -> "Es de segundo grado (ax² + bx + c = 0): calculamos el discriminante y usamos la fórmula general."
+        method.startsWith("Polinomio") -> "Es un polinomio de grado alto: lo ordenamos y calculamos todas sus raíces."
+        method == "Numérico" -> "No se puede despejar con pasos simples, así que buscamos los valores de x donde ambos lados se igualan."
+        method == "Identidad" -> "Los dos lados son siempre iguales."
+        method == "Contradicción" -> "Los dos lados nunca pueden ser iguales."
+        else -> "Calculamos el valor de la expresión."
+    }
+
+    /** Por qué se hace cada paso (según el tipo de paso). */
+    fun explain(title: String): String = when {
+        title == "Ecuación" -> "Este es el problema. La meta es dejar la x sola en un lado del signo =."
+        title == "Expresión" -> "Esta es la operación que vamos a calcular."
+        title.startsWith("Intercambiar") -> "Ponemos la parte con x a la izquierda; una igualdad se puede leer en ambos sentidos."
+        title.startsWith("Restar") -> "Ese número está sumando junto a la parte con x. Para quitarlo restamos lo mismo en ambos lados, así la igualdad se mantiene."
+        title.startsWith("Sumar") -> "Ese número está restando. Para quitarlo sumamos lo mismo en ambos lados."
+        title.startsWith("Dividir") -> "Ese número está multiplicando a la parte con x. Lo contrario de multiplicar es dividir, y lo hacemos en ambos lados."
+        title.startsWith("Multiplicar ambos lados por −1") -> "La parte con x tiene un signo menos delante; al multiplicar por −1 en ambos lados cambian los signos."
+        title.startsWith("Multiplicar ambos lados por 100") -> "x% significa x ÷ 100; multiplicando por 100 quitamos el porcentaje."
+        title.startsWith("Multiplicar") -> "La parte con x está dividida entre ese número. Lo contrario de dividir es multiplicar, en ambos lados."
+        title.startsWith("Invertir ambos") -> "Si 1/g = c, entonces g = 1/c."
+        title.startsWith("Invertir") -> "La x está en el denominador: si a ÷ g = c, entonces g = a ÷ c."
+        title.startsWith("Despejar") -> "La parte con x está restando a un número: si a − g = c, entonces g = a − c."
+        title.startsWith("Elevar al cuadrado") -> "Para quitar una raíz cuadrada elevamos al cuadrado ambos lados, porque (√g)² = g."
+        title.startsWith("Elevar al cubo") -> "Para quitar una raíz cúbica elevamos al cubo: (∛g)³ = g."
+        title.startsWith("Elevar ambos lados a 1/") -> "Para quitar el exponente sacamos la raíz que le corresponde."
+        title.startsWith("Elevar ambos lados") -> "Una raíz de índice n se elimina elevando a la potencia n."
+        title.startsWith("Sacar") && "±" in title -> "Para quitar el cuadrado sacamos raíz cuadrada. Hay dos soluciones (±) porque un número positivo y su negativo al cuadrado dan lo mismo."
+        title.startsWith("Sacar") -> "Para quitar el exponente sacamos la raíz del mismo índice."
+        title.startsWith("Aplicar logaritmo") || title.startsWith("Aplicar ln") -> "La x está en el exponente. El logaritmo \"baja\" el exponente: si bᵍ = c, entonces g = log_b(c)."
+        title.startsWith("Aplicar e^") -> "El logaritmo natural se deshace con la exponencial: si ln(g) = c, entonces g = eᶜ."
+        title.startsWith("Aplicar 10^") -> "log es el logaritmo en base 10; se deshace elevando 10: si log(g) = c, entonces g = 10ᶜ."
+        title.startsWith("Aplicar 2^") -> "log₂ se deshace elevando 2: si log₂(g) = c, entonces g = 2ᶜ."
+        "⁻¹" in title && title.startsWith("Aplicar") -> "Usamos la función inversa para despejar el ángulo. Estas funciones se repiten, por eso hay más soluciones cada periodo."
+        title.startsWith("Aplicar") -> "Aplicamos la función contraria en ambos lados para deshacer la que envuelve a la x."
+        title.startsWith("Valor absoluto") -> "Si |g| = c, lo de adentro puede valer c o −c, porque los dos están a la misma distancia del cero."
+        title.startsWith("Comprobación") -> "Reemplazamos x por el valor encontrado en la ecuación original. Si ambos lados dan lo mismo, la solución es correcta."
+        "no cumple" in title -> "Algunas operaciones (como elevar al cuadrado) pueden crear soluciones falsas; por eso siempre comprobamos."
+        title.startsWith("Llevar todo a un lado") -> "Pasamos todo al lado izquierdo (lo que cambia de lado cambia de signo) y juntamos los términos semejantes."
+        title.startsWith("Coeficientes") -> "Identificamos a, b y c en la forma ax² + bx + c = 0."
+        title.startsWith("Discriminante") -> "El discriminante Δ dice cuántas soluciones hay: positivo → dos, cero → una, negativo → ninguna real."
+        title.startsWith("Fórmula general") -> "Es la fórmula que resuelve cualquier ecuación de segundo grado."
+        title.startsWith("Δ > 0") -> "Como Δ es positivo, √Δ existe y salen dos valores: uno con + y otro con −."
+        title.startsWith("Δ = 0") -> "Como Δ = 0, el ± no cambia nada: hay una sola solución (doble)."
+        title.startsWith("Δ < 0") -> "No hay raíz real de un número negativo, así que las soluciones son complejas (i = √−1)."
+        title.startsWith("Resultado") -> "Este es el valor final."
+        title.startsWith("Polinomio de grado") -> "Para grado 3 o más usamos un método numérico que encuentra todas las raíces a la vez."
+        title.startsWith("Forma factorizada") -> "Cada raíz r da un factor (x − r); multiplicando los factores se recupera el polinomio."
+        title.startsWith("Se busca numéricamente") -> "Pasamos todo a un lado: las soluciones son los valores de x donde la expresión vale 0."
+        title.startsWith("Rastreo") -> "Probamos muchos valores de x; donde el signo cambia hay una raíz, y la afinamos partiendo el intervalo a la mitad."
+        title.startsWith("La ecuación se cumple siempre") -> "Ambos lados son iguales para cualquier x: hay infinitas soluciones."
+        title.startsWith("No depende de x") -> "Las x se cancelan y queda una igualdad falsa: no hay solución."
+        title.startsWith("Comparación") -> "Calculamos cada lado y vemos si son iguales."
+        else -> ""
     }
 
     /** Devuelve los valores de x, o null si no se puede despejar (x en ambos lados de una operación...). */

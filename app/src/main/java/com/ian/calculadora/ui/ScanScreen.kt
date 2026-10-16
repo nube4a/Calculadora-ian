@@ -8,6 +8,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,6 +67,8 @@ import java.io.File
 fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) -> Unit) {
     val context = LocalContext.current
     val equation = rememberPersisted(vm, "scan_eq", "14√x+15=71")
+    val eq = remember { EquationState(equation.value) { equation.value = it } }
+    var showKeyboard by rememberSaveable { mutableStateOf(true) }
     var preview by remember { mutableStateOf<ImageBitmap?>(null) }
     var lines by remember { mutableStateOf<List<String>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
@@ -77,7 +82,7 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
     fun solve() {
         error = null
         solution = try {
-            StepSolver.solve(equation.value, vm.state.angleMode)
+            StepSolver.solve(eq.text, vm.state.angleMode).also { showKeyboard = false }
         } catch (e: CalcException) {
             error = e.message
             null
@@ -107,7 +112,7 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
                     error = "No se reconoció ninguna operación. Prueba con más luz, enfoca de cerca o escríbela abajo."
                 } else {
                     // Preferimos la línea que parece una ecuación.
-                    equation.value = found.firstOrNull { '=' in it } ?: found.first()
+                    eq.replaceAll(found.firstOrNull { '=' in it } ?: found.first())
                     solve()
                 }
             }
@@ -126,7 +131,13 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
         if (uri != null) recognize(uri)
     }
 
-    ToolScaffold("Escanear y resolver", onBack) { actions ->
+    ToolScaffold("Resolver paso a paso", onBack, scrollable = false) { actions ->
+      Column(
+          Modifier
+              .weight(1f)
+              .verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = {
@@ -151,7 +162,7 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
                 Text("Galería")
             }
         }
-        HelpText("Encuadra solo la operación, con buena luz. Funciona mejor con texto impreso o letra clara; siempre puedes corregir lo reconocido.")
+        HelpText("Escribe la ecuación con el teclado o escanéala. Toca la ecuación para mover el cursor y corregirla.")
 
         preview?.let {
             Box(contentAlignment = Alignment.Center) {
@@ -173,22 +184,19 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
             HelpText("Texto detectado — toca la línea correcta:")
             lines.take(8).forEach { line ->
                 AssistChip(
-                    onClick = { equation.value = line; solve() },
+                    onClick = { eq.replaceAll(line); solve() },
                     label = { Text(line, fontFamily = FontFamily.Monospace) },
                 )
             }
         }
 
-        ExprField(
-            equation.value,
-            { equation.value = it; solution = null },
-            "Ecuación o expresión (puedes corregirla)",
-        )
-        Button(onClick = { solve() }, modifier = Modifier.fillMaxWidth()) { Text("Resolver paso a paso") }
+        EquationEditor(eq, onFocus = { showKeyboard = true })
+        Button(onClick = { solve() }, modifier = Modifier.fillMaxWidth()) { Text("Resolver") }
         error?.let { ErrorText(it) }
 
         solution?.let { sol ->
             SectionCard("Solución · ${sol.method}") {
+                HelpText(StepSolver.explainMethod(sol.method))
                 sol.solutions.forEach { s ->
                     Text(
                         s,
@@ -214,15 +222,19 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
             }
             SectionCard("Pasos") {
                 sol.steps.forEachIndexed { i, step ->
-                    StepRow(i + 1, step.title, step.math) { actions.copy(step.math) }
+                    StepRow(i + 1, step.title, step.math, step.explanation)
                 }
             }
+        }
+      }
+        if (showKeyboard) {
+            MathKeyboard(eq, onSolve = { solve() })
         }
     }
 }
 
 @Composable
-private fun StepRow(number: Int, title: String, math: String, onCopy: () -> Unit) {
+private fun StepRow(number: Int, title: String, math: String, explanation: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 0.dp), verticalAlignment = Alignment.Top) {
         Box(
             Modifier
@@ -241,6 +253,18 @@ private fun StepRow(number: Int, title: String, math: String, onCopy: () -> Unit
                 fontSize = 18.sp,
                 modifier = Modifier.padding(top = 2.dp),
             )
+            if (explanation.isNotBlank()) {
+                Text(
+                    "💡 $explanation",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+            }
         }
     }
 }

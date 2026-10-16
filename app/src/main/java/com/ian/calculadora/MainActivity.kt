@@ -73,7 +73,7 @@ import kotlinx.coroutines.launch
 
 enum class Screen(val title: String, val icon: ImageVector) {
     CALC("Calculadora", Icons.Outlined.Calculate),
-    SCAN("Escanear y resolver (paso a paso)", Icons.Outlined.DocumentScanner),
+    SCAN("Resolver paso a paso", Icons.Outlined.DocumentScanner),
     GRAPH("Gráficas", Icons.Outlined.ShowChart),
     ALGEBRA("Derivadas y álgebra", Icons.Outlined.Insights),
     SOLVER("Ecuaciones", Icons.Outlined.Functions),
