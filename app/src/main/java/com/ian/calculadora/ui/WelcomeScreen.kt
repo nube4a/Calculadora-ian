@@ -99,16 +99,14 @@ fun WelcomeScreen(onFinish: () -> Unit) {
                 Spacer(Modifier.height(36.dp))
                 Text(
                     page.title,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(Modifier.height(14.dp))
                 Text(
                     page.body,
-                    fontSize = 17.sp,
-                    lineHeight = 25.sp,
+                    style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp),

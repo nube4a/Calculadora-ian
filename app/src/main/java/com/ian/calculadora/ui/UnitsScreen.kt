@@ -75,8 +75,7 @@ fun UnitsScreen(vm: CalculatorViewModel, onBack: () -> Unit) {
                         Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
                             Text(
                                 text,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontFamily = FontFamily.Monospace,
+                                style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = com.ian.calculadora.ui.theme.TABULAR),
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(

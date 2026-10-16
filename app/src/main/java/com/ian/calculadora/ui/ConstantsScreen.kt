@@ -62,7 +62,7 @@ fun ConstantsScreen(vm: CalculatorViewModel, onBack: () -> Unit) {
                         Text(c.name, style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "${NumberFormatter.format(c.value)} ${c.unit}",
-                            fontFamily = FontFamily.Monospace,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = com.ian.calculadora.ui.theme.TABULAR),
                             fontWeight = FontWeight.SemiBold,
                         )
                     }

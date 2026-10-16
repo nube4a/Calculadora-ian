@@ -73,6 +73,12 @@ import com.ian.calculadora.CalculatorViewModel
 import com.ian.calculadora.engine.DisplayMode
 import com.ian.calculadora.engine.Names
 import com.ian.calculadora.ui.theme.LocalCalcColors
+import com.ian.calculadora.ui.theme.Shapes
+import com.ian.calculadora.ui.theme.Space
+import com.ian.calculadora.ui.theme.TABULAR
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.shadow
 
 private enum class KeyKind { NUMBER, OPERATOR, FUNCTION, ACTION, EQUALS, MEMORY }
 
@@ -123,7 +129,7 @@ fun CalculatorScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .padding(horizontal = Space.md, vertical = Space.xs)
         ) {
             TopBar(vm, state, onOpenHistory, onOpenMenu, onOpenScan)
             Display(
@@ -173,40 +179,51 @@ private fun TopBar(
     onOpenMenu: () -> Unit,
     onOpenScan: () -> Unit,
 ) {
-    val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
-        Modifier.fillMaxWidth(),
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.sm),
     ) {
-        IconButton(onClick = onOpenMenu) {
-            Icon(Icons.Outlined.Menu, contentDescription = "Herramientas", tint = muted)
-        }
+        RoundIcon(Icons.Outlined.Menu, "Herramientas", onOpenMenu)
         ModeText(state.angleMode.name) { vm.toggleAngle() }
         if (state.displayMode != DisplayMode.NORMAL) {
             ModeText(state.displayMode.label, highlighted = true) { vm.setDisplayMode(DisplayMode.NORMAL) }
         }
         Spacer(Modifier.weight(1f))
-        IconButton(onClick = onOpenScan) {
-            Icon(Icons.Outlined.PhotoCamera, contentDescription = "Escanear operación", tint = muted)
-        }
-        IconButton(onClick = onOpenHistory) {
-            Icon(Icons.Outlined.History, contentDescription = "Historial", tint = muted)
-        }
+        RoundIcon(Icons.Outlined.PhotoCamera, "Escanear operación", onOpenScan)
+        RoundIcon(Icons.Outlined.History, "Historial", onOpenHistory)
     }
 }
 
-/** Indicador discreto (DEG, NORM…) que cambia al tocarlo. */
+/** Botón redondo tonal de la barra superior. */
+@Composable
+private fun RoundIcon(icon: ImageVector, description: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = description, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** Indicador del modo (DEG, SCI…) en forma de pastilla; cambia al tocarlo. */
 @Composable
 private fun ModeText(text: String, highlighted: Boolean = false, onClick: () -> Unit) {
     Text(
         text,
-        color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Medium,
+        style = MaterialTheme.typography.labelMedium,
+        color = if (highlighted) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
+            .clip(Shapes.pill)
+            .background(if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
     )
 }
 
@@ -215,18 +232,37 @@ private fun ExpandToggle(expanded: Boolean, hasMemory: Boolean, onToggle: () -> 
     Row(
         Modifier
             .fillMaxWidth()
-            .height(40.dp),
+            .padding(vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.sm),
     ) {
-        IconButton(onClick = onToggle) {
+        Row(
+            Modifier
+                .clip(Shapes.pill)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clickable(onClick = onToggle)
+                .padding(start = 14.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                if (expanded) "Ocultar funciones" else "Funciones",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Icon(
                 if (expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
                 contentDescription = "Funciones científicas",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
             )
         }
         if (hasMemory) {
-            Text("M", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(
+                "M",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.clip(Shapes.pill).background(MaterialTheme.colorScheme.primary).padding(horizontal = 10.dp, vertical = 6.dp),
+            )
         }
     }
 }
@@ -252,6 +288,7 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
         else -> 30.sp
     }
     val ghost = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+    val typo = MaterialTheme.typography
     Column(
         modifier
             .combinedClickable(
@@ -268,8 +305,8 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
         if (state.expression.isEmpty() && !finished && state.error == null) {
             Text(
                 greeting(),
+                style = typo.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
                 modifier = Modifier.align(Alignment.Start),
             )
             Spacer(Modifier.weight(1f))
@@ -279,8 +316,9 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
                 append(state.expression.ifEmpty { "0" })
                 withStyle(SpanStyle(color = ghost)) { append(")".repeat(state.openParens)) }
             },
-            fontSize = if (finished) 30.sp else exprSize,
-            fontWeight = FontWeight.Light,
+            style = typo.displaySmall.copy(fontFeatureSettings = TABULAR),
+            fontSize = if (finished) 28.sp else exprSize,
+            fontWeight = if (finished) FontWeight.Medium else FontWeight.Normal,
             color = if (finished) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             softWrap = false,
@@ -291,16 +329,21 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
             state.error != null -> Triple(state.error.orEmpty(), MaterialTheme.colorScheme.error, 22.sp)
             state.result != null -> Triple(
                 state.result.orEmpty(),
-                MaterialTheme.colorScheme.primary,
-                if (state.result.orEmpty().length > 12) 44.sp else 64.sp,
+                MaterialTheme.colorScheme.onSurface,
+                if (state.result.orEmpty().length > 12) 44.sp else 68.sp,
             )
-            else -> Triple(state.preview, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), 28.sp)
+            else -> Triple(
+                if (state.preview.isEmpty()) "" else "= ${state.preview}",
+                MaterialTheme.colorScheme.primary,
+                28.sp,
+            )
         }
         Text(
             text = text,
+            style = typo.displayLarge.copy(fontFeatureSettings = TABULAR),
             color = color,
             fontSize = size,
-            fontWeight = if (state.result != null) FontWeight.Normal else FontWeight.Light,
+            fontWeight = if (state.result != null) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,
@@ -435,20 +478,25 @@ private fun RowScope.KeyButton(key: Key, small: Boolean) {
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.9f else 1f, label = "tecla")
     val fontSize: TextUnit = when {
-        key.kind == KeyKind.MEMORY -> 14.sp
+        key.kind == KeyKind.MEMORY -> 13.sp
         small -> if (key.label.length > 3) 14.sp else 17.sp
-        key.label.length > 2 -> 24.sp
-        else -> 32.sp
+        key.label.length > 2 -> 22.sp
+        else -> 30.sp
     }
+    val shape = Shapes.key
+    val raised = c.raisedKeys && key.kind == KeyKind.NUMBER
     Box(
         Modifier
             .weight(1f)
             .fillMaxHeight()
-            .padding(if (small) 3.dp else 5.dp)
+            .padding(if (small) 3.dp else 6.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            // 50 % de redondeo: círculo si la tecla es cuadrada, píldora si es más ancha que alta.
-            .clip(RoundedCornerShape(50))
-            .background(bg)
+            .then(if (raised) Modifier.shadow(1.5.dp, shape, ambientColor = Color(0x22283A66), spotColor = Color(0x33283A66)) else Modifier)
+            .clip(shape)
+            .then(
+                if (key.kind == KeyKind.EQUALS && !key.active) Modifier.background(c.equalsBrush)
+                else Modifier.background(bg)
+            )
             .combinedClickable(
                 interactionSource = interaction,
                 indication = LocalIndication.current,
@@ -472,7 +520,11 @@ private fun RowScope.KeyButton(key: Key, small: Boolean) {
                 key.label,
                 color = fg,
                 fontSize = fontSize,
-                fontWeight = if (key.kind == KeyKind.ACTION || key.kind == KeyKind.EQUALS) FontWeight.Medium else FontWeight.Normal,
+                fontFamily = com.ian.calculadora.ui.theme.Manrope,
+                fontWeight = when (key.kind) {
+                    KeyKind.ACTION, KeyKind.EQUALS, KeyKind.OPERATOR -> FontWeight.SemiBold
+                    else -> FontWeight.Medium
+                },
                 maxLines = 1,
             )
         }

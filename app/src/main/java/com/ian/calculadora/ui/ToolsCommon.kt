@@ -1,6 +1,16 @@
 package com.ian.calculadora.ui
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.FilterChipDefaults
+import com.ian.calculadora.ui.theme.Shapes
+import com.ian.calculadora.ui.theme.Space
+import com.ian.calculadora.ui.theme.TABULAR
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -70,17 +80,33 @@ fun ToolScaffold(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                },
-            )
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = Space.md, end = Space.lg, top = Space.sm, bottom = Space.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .clickable(onClick = onBack),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", modifier = Modifier.size(22.dp))
+                }
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = Space.md),
+                )
+            }
         },
     ) { padding ->
-        val base = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)
+        val base = Modifier.fillMaxSize().padding(padding).padding(horizontal = Space.lg)
         Column(
             if (scrollable) base.verticalScroll(rememberScrollState()) else base,
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -125,7 +151,8 @@ fun ExprField(
         supportingText = error?.let { { Text(it) } },
         singleLine = singleLine,
         minLines = minLines,
-        textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+        textStyle = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = TABULAR),
+        shape = Shapes.field,
         keyboardOptions = KeyboardOptions(
             keyboardType = if (numeric) KeyboardType.Decimal else KeyboardType.Ascii,
             autoCorrectEnabled = false,
@@ -144,7 +171,17 @@ fun <T> ChoiceChips(options: List<T>, selected: T, label: (T) -> String, onSelec
             FilterChip(
                 selected = option == selected,
                 onClick = { onSelect(option) },
-                label = { Text(label(option)) },
+                label = { Text(label(option), style = MaterialTheme.typography.labelLarge) },
+                shape = Shapes.chip,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = option == selected,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                ),
             )
         }
     }
@@ -165,8 +202,8 @@ fun ResultRow(label: String, value: String, actions: ToolActions, highlight: Boo
         )
         Text(
             value,
-            style = if (highlight) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
-            fontFamily = FontFamily.Monospace,
+            style = (if (highlight) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge)
+                .copy(fontFeatureSettings = TABULAR),
             fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Normal,
             color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(0.55f),
@@ -180,16 +217,18 @@ fun ResultRow(label: String, value: String, actions: ToolActions, highlight: Boo
 @Composable
 fun SectionCard(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = Shapes.card,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 8.dp, end = 4.dp)) {
+        Column(Modifier.padding(start = Space.lg + 2.dp, top = Space.lg, bottom = Space.md, end = Space.xs)) {
             if (title != null) {
                 Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall,
+                    title.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 4.dp),
+                    modifier = Modifier.padding(bottom = Space.sm),
                 )
             }
             content()

@@ -47,6 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ian.calculadora.engine.Names
 import com.ian.calculadora.ui.theme.LocalCalcColors
+import com.ian.calculadora.ui.theme.Shapes
+import com.ian.calculadora.ui.theme.TABULAR
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 
 /** Texto de la ecuación con cursor; las teclas insertan en la posición del cursor. */
 class EquationState(initial: String, private val onChange: (String) -> Unit) {
@@ -99,9 +103,9 @@ fun EquationEditor(state: EquationState, onFocus: () -> Unit, modifier: Modifier
         modifier
             .fillMaxWidth()
             .heightIn(min = 76.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(Shapes.field)
             .background(LocalCalcColors.current.display)
-            .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+            .border(2.dp, MaterialTheme.colorScheme.primary, Shapes.field)
             .clickable { state.cursor = state.text.length; onFocus() }
             .padding(horizontal = 18.dp, vertical = 14.dp),
         contentAlignment = Alignment.CenterStart,
@@ -111,7 +115,7 @@ fun EquationEditor(state: EquationState, onFocus: () -> Unit, modifier: Modifier
         }
         Text(
             state.text,
-            fontSize = 30.sp,
+            style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = TABULAR, fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
             onTextLayout = { layout = it },
             modifier = Modifier
@@ -180,6 +184,7 @@ fun MathKeyboard(state: EquationState, onSolve: () -> Unit, modifier: Modifier =
         modifier
             .fillMaxWidth()
             .background(colors.surfaceContainerLow)
+            .border(1.dp, colors.outlineVariant, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
             .padding(horizontal = 6.dp, vertical = 4.dp),
     ) {
         // Fila de edición
@@ -197,18 +202,21 @@ fun MathKeyboard(state: EquationState, onSolve: () -> Unit, modifier: Modifier =
         }
         // Pestañas
         Row(
-            Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .clip(Shapes.pill)
+                .background(colors.surfaceContainerHighest)
+                .padding(4.dp),
         ) {
             tabs.forEachIndexed { i, label ->
                 val selected = i == tab
                 Box(
                     Modifier
                         .weight(1f)
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (selected) colors.primary else colors.surface)
-                        .border(1.dp, if (selected) colors.primary else colors.outlineVariant, RoundedCornerShape(50))
+                        .height(44.dp)
+                        .clip(Shapes.pill)
+                        .background(if (selected) colors.primary else Color.Transparent)
                         .clickable { tab = i },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -218,7 +226,7 @@ fun MathKeyboard(state: EquationState, onSolve: () -> Unit, modifier: Modifier =
                         fontSize = 12.sp,
                         lineHeight = 14.sp,
                         textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -237,6 +245,7 @@ fun MathKeyboard(state: EquationState, onSolve: () -> Unit, modifier: Modifier =
                         if (isOp) calc.operator else calc.number,
                         if (isOp) calc.onOperator else calc.onNumber,
                         big = true,
+                        raised = !isOp && calc.raisedKeys,
                     ) { state.insert(n) }
                 }
             }
@@ -266,7 +275,7 @@ private fun BackspaceButton(state: EquationState, modifier: Modifier) {
 }
 
 @Composable
-private fun RowScope.MathKeyCell(label: String, bg: androidx.compose.ui.graphics.Color, fg: androidx.compose.ui.graphics.Color, big: Boolean = false, onClick: () -> Unit) {
+private fun RowScope.MathKeyCell(label: String, bg: Color, fg: Color, big: Boolean = false, raised: Boolean = false, onClick: () -> Unit) {
     val view = LocalView.current
     Box(
         Modifier
@@ -274,7 +283,8 @@ private fun RowScope.MathKeyCell(label: String, bg: androidx.compose.ui.graphics
             .padding(3.dp)
             .fillMaxWidth()
             .height(48.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .then(if (raised) Modifier.shadow(1.dp, Shapes.key, ambientColor = Color(0x22283A66), spotColor = Color(0x33283A66)) else Modifier)
+            .clip(Shapes.key)
             .background(bg)
             .clickable {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -282,6 +292,6 @@ private fun RowScope.MathKeyCell(label: String, bg: androidx.compose.ui.graphics
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = fg, fontSize = if (big) 24.sp else 17.sp, maxLines = 1)
+        Text(label, color = fg, fontSize = if (big) 24.sp else 17.sp, fontWeight = if (big) FontWeight.SemiBold else FontWeight.Medium, maxLines = 1)
     }
 }

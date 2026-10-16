@@ -185,7 +185,7 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
             lines.take(8).forEach { line ->
                 AssistChip(
                     onClick = { eq.replaceAll(line); solve() },
-                    label = { Text(line, fontFamily = FontFamily.Monospace) },
+                    label = { Text(line) },
                 )
             }
         }
@@ -200,8 +200,7 @@ fun ScanScreen(vm: CalculatorViewModel, onBack: () -> Unit, onGraph: (String) ->
                 sol.solutions.forEach { s ->
                     Text(
                         s,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = com.ian.calculadora.ui.theme.TABULAR),
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(vertical = 2.dp),
@@ -249,8 +248,7 @@ private fun StepRow(number: Int, title: String, math: String, explanation: Strin
             Text(title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 math,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = com.ian.calculadora.ui.theme.TABULAR),
                 modifier = Modifier.padding(top = 2.dp),
             )
             if (explanation.isNotBlank()) {
