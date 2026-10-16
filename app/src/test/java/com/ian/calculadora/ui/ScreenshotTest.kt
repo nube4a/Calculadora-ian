@@ -12,7 +12,10 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.ian.calculadora.MainActivity
+import android.content.Context
 import org.junit.Rule
+import org.junit.rules.ExternalResource
+import org.robolectric.RuntimeEnvironment
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -24,7 +27,17 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
 class ScreenshotTest {
 
-    @get:Rule
+    // Cada prueba arranca como una instalación nueva (sin bienvenida vista ni tema guardado).
+    @get:Rule(order = 0)
+    val resetPrefs = object : ExternalResource() {
+        override fun before() {
+            RuntimeEnvironment.getApplication()
+                .getSharedPreferences("calculadora", Context.MODE_PRIVATE)
+                .edit().clear().commit()
+        }
+    }
+
+    @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
     private fun shot(name: String) {
