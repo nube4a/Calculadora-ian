@@ -95,7 +95,7 @@ class ScreenshotTest {
         shot("05_teclado_matematico")
         compose.onAllNodes(hasText("Resolver") and hasClickAction()).onFirst().performClick()
         shot("05_escanear")
-        compose.onNodeWithText("Pasos").performScrollTo()
+        compose.onNodeWithText("PASOS").performScrollTo()
         shot("06_paso_a_paso")
         back()
 
