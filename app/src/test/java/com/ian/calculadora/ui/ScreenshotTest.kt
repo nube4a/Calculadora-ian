@@ -22,6 +22,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** Recorre la app real y guarda capturas de cada pantalla (como en un Pixel). */
+@org.junit.FixMethodOrder(org.junit.runners.MethodSorters.NAME_ASCENDING)
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
@@ -74,19 +75,8 @@ class ScreenshotTest {
     }
 
     @Test
-    fun recorrido() {
+    fun a_recorrido() {
         // Bienvenida (primera vez)
-        val prefsNow = RuntimeEnvironment.getApplication().getSharedPreferences("calculadora", 0).all
-        fun dump(n: androidx.compose.ui.semantics.SemanticsNode, out: MutableList<String>) {
-            n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Text)?.let { out += it.joinToString("") { t -> t.text } }
-            n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription)?.let { out += "cd:" + it.joinToString() }
-            n.children.forEach { c -> dump(c, out) }
-        }
-        val seen = mutableListOf<String>()
-        compose.onAllNodes(androidx.compose.ui.test.isRoot()).fetchSemanticsNodes().forEach { dump(it, seen) }
-        check(prefsNow.isEmpty() && compose.onAllNodes(hasText("Siguiente")).fetchSemanticsNodes().isNotEmpty()) {
-            "DIAG prefs=$prefsNow ; textos=" + seen.joinToString(" | ").take(1500)
-        }
         shot("00_bienvenida_1")
         key("Siguiente")
         shot("00_bienvenida_2")
@@ -153,7 +143,7 @@ class ScreenshotTest {
 
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp-night-xxhdpi")
-    fun modoOscuro() {
+    fun b_modoOscuro() {
         // La bienvenida puede haber quedado marcada como vista en la prueba anterior.
         if (compose.onAllNodes(hasText("Saltar") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()) key("Saltar")
         setScientific(false)
@@ -169,7 +159,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun forzarOscuroDesdeElMenu() {
+    fun c_forzarOscuroDesdeElMenu() {
         // Teléfono en modo claro; la persona elige "Oscuro" en el menú.
         if (compose.onAllNodes(hasText("Saltar") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()) key("Saltar")
         setScientific(false)
