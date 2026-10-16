@@ -70,7 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ian.calculadora.CalcState
 import com.ian.calculadora.CalculatorViewModel
-import com.ian.calculadora.engine.AngleMode
+import com.ian.calculadora.engine.DisplayMode
 import com.ian.calculadora.engine.Names
 import com.ian.calculadora.ui.theme.LocalCalcColors
 
@@ -182,7 +182,9 @@ private fun TopBar(
             Icon(Icons.Outlined.Menu, contentDescription = "Herramientas", tint = muted)
         }
         ModeText(state.angleMode.name) { vm.toggleAngle() }
-        ModeText(state.displayMode.label) { vm.cycleDisplayMode() }
+        if (state.displayMode != DisplayMode.NORMAL) {
+            ModeText(state.displayMode.label, highlighted = true) { vm.setDisplayMode(DisplayMode.NORMAL) }
+        }
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onOpenScan) {
             Icon(Icons.Outlined.PhotoCamera, contentDescription = "Escanear operación", tint = muted)
@@ -195,10 +197,10 @@ private fun TopBar(
 
 /** Indicador discreto (DEG, NORM…) que cambia al tocarlo. */
 @Composable
-private fun ModeText(text: String, onClick: () -> Unit) {
+private fun ModeText(text: String, highlighted: Boolean = false, onClick: () -> Unit) {
     Text(
         text,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         modifier = Modifier
@@ -304,7 +306,7 @@ private fun Display(state: CalcState, onCopy: () -> Unit, modifier: Modifier) {
             textAlign = TextAlign.End,
         )
         state.siHint?.let {
-            Text("≈ $it", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
+            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 20.sp)
         }
     }
 }
@@ -319,7 +321,9 @@ private fun scientificKeys(vm: CalculatorViewModel, s: CalcState): List<List<Key
         listOf(
             Key("2nd", KeyKind.FUNCTION, active = inv) { vm.toggleSecond() },
             Key("hyp", KeyKind.FUNCTION, active = s.hyp) { vm.toggleHyp() },
-            Key(if (s.angleMode == AngleMode.DEG) "Deg" else "Rad", KeyKind.FUNCTION) { vm.toggleAngle() },
+            Key(s.displayMode.label.lowercase().replaceFirstChar { it.uppercase() }, KeyKind.FUNCTION, active = s.displayMode != DisplayMode.NORMAL) {
+                vm.cycleDisplayMode()
+            },
             Key("±", KeyKind.FUNCTION) { vm.toggleSign() },
             Key(",", KeyKind.FUNCTION) { vm.insert(",") },
         ),

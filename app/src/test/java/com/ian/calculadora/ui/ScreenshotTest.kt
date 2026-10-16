@@ -70,6 +70,11 @@ class ScreenshotTest {
         shot("00_bienvenida_3")
         key("Empezar")
         setScientific(false)
+        // Por defecto el resultado se ve normal (64), no en notación científica (6.4E1).
+        keys("8", "×", "8")
+        key("=")
+        compose.onNodeWithText("64").assertExists()
+        key("AC")
         keys("1", "6", "×", "( )", "0", ".", "5", "+", "2", ".", "5", "( )")
         shot("00_calculadora_minimal")
         key("AC")

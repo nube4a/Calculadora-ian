@@ -179,10 +179,17 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
         update(state.copy(angleMode = mode), recompute = true)
     }
 
-    fun cycleDisplayMode() {
-        val mode = DisplayMode.entries[(state.displayMode.ordinal + 1) % DisplayMode.entries.size]
+    fun cycleDisplayMode() =
+        setDisplayMode(DisplayMode.entries[(state.displayMode.ordinal + 1) % DisplayMode.entries.size])
+
+    fun setDisplayMode(mode: DisplayMode) {
         repo.displayMode = mode
-        val newState = state.copy(displayMode = mode)
+        val explanation = when (mode) {
+            DisplayMode.NORMAL -> "Formato normal"
+            DisplayMode.SCI -> "Notación científica: 6.4E1 = 6.4 × 10¹ = 64"
+            DisplayMode.ENG -> "Notación de ingeniería: 4.7E−3 = 4.7 m (mili)"
+        }
+        val newState = state.copy(displayMode = mode, message = explanation)
         state = if (justEvaluated) {
             newState.copy(result = NumberFormatter.formatGrouped(ans, mode), siHint = siHint(ans, mode))
         } else {
@@ -190,8 +197,12 @@ class CalculatorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun siHint(value: Double, mode: DisplayMode = state.displayMode) =
-        if (mode == DisplayMode.ENG) NumberFormatter.siPrefix(value) else null
+    /** Ayuda bajo el resultado cuando no está en formato normal: "= 64" o "≈ 4.7 m". */
+    private fun siHint(value: Double, mode: DisplayMode = state.displayMode): String? = when (mode) {
+        DisplayMode.NORMAL -> null
+        DisplayMode.SCI -> "= " + NumberFormatter.formatGrouped(value)
+        DisplayMode.ENG -> NumberFormatter.siPrefix(value)?.let { "≈ $it" } ?: ("= " + NumberFormatter.formatGrouped(value))
+    }
 
     fun toggleSecond() = update(state.copy(second = !state.second))
     fun toggleHyp() = update(state.copy(hyp = !state.hyp))

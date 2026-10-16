@@ -79,6 +79,6 @@ class HistoryRepository(context: Context) {
         private const val KEY_MEMORY = "memory"
         private const val KEY_ANS = "ans"
         private const val KEY_ANGLE = "angle"
-        private const val KEY_DISPLAY = "display"
+        private const val KEY_DISPLAY = "display_format"
     }
 }
