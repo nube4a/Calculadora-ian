@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -78,8 +77,15 @@ class ScreenshotTest {
     fun recorrido() {
         // Bienvenida (primera vez)
         val prefsNow = RuntimeEnvironment.getApplication().getSharedPreferences("calculadora", 0).all
+        fun dump(n: androidx.compose.ui.semantics.SemanticsNode, out: MutableList<String>) {
+            n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Text)?.let { out += it.joinToString("") { t -> t.text } }
+            n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription)?.let { out += "cd:" + it.joinToString() }
+            n.children.forEach { c -> dump(c, out) }
+        }
+        val seen = mutableListOf<String>()
+        compose.onAllNodes(androidx.compose.ui.test.isRoot()).fetchSemanticsNodes().forEach { dump(it, seen) }
         check(prefsNow.isEmpty() && compose.onAllNodes(hasText("Siguiente")).fetchSemanticsNodes().isNotEmpty()) {
-            "DIAG prefs=$prefsNow ; arbol=" + compose.onRoot().printToString(maxDepth = 3).take(1500)
+            "DIAG prefs=$prefsNow ; textos=" + seen.joinToString(" | ").take(1500)
         }
         shot("00_bienvenida_1")
         key("Siguiente")
