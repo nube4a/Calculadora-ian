@@ -12,8 +12,8 @@ android {
         applicationId = "com.ian.calculadora"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "3.6"
+        versionCode = 10
+        versionName = "3.7"
     }
 
     // Firma de subida para Google Play. Los datos vienen de variables de entorno

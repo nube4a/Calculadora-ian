@@ -143,4 +143,22 @@ class ScreenshotTest {
         compose.onNodeWithContentDescription("Herramientas").performClick()
         shot("23_oscuro_menu")
     }
+
+    @Test
+    fun forzarOscuroDesdeElMenu() {
+        // Teléfono en modo claro; la persona elige "Oscuro" en el menú.
+        if (compose.onAllNodes(hasText("Saltar") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()) key("Saltar")
+        setScientific(false)
+        compose.onNodeWithContentDescription("Herramientas").performClick()
+        compose.waitForIdle()
+        shot("30_tema_menu_claro")
+        compose.onNodeWithText("Oscuro").performClick()
+        compose.waitForIdle()
+        shot("31_tema_menu_oscuro")
+        compose.onNodeWithText("Calculadora").performClick()
+        compose.waitForIdle()
+        keys("8", "×", "8")
+        key("=")
+        shot("32_tema_forzado_oscuro")
+    }
 }

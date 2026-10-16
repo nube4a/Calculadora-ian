@@ -1,6 +1,13 @@
 package com.ian.calculadora.ui.theme
 
+import android.app.Activity
+import android.content.ContextWrapper
+import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -91,14 +98,41 @@ private val LightColors = lightColorScheme(
     error = Color(0xFFC62828), onError = Color.White,
 )
 
+/** Tema elegido por la persona: seguir al teléfono, claro u oscuro. */
+enum class ThemeMode(val label: String) {
+    SYSTEM("Sistema"), LIGHT("Claro"), DARK("Oscuro");
+
+    companion object {
+        fun from(name: String?) = entries.firstOrNull { it.name == name } ?: SYSTEM
+    }
+}
+
 @Composable
-fun CalculadoraTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+fun CalculadoraTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    val colors = if (dark) DarkColors else LightColors
+
+    // Íconos de la barra de estado y fondo de la ventana acordes al tema elegido (no solo al del teléfono).
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            var ctx = view.context
+            while (ctx is ContextWrapper && ctx !is Activity) ctx = ctx.baseContext
+            (ctx as? Activity)?.window?.let { window ->
+                window.setBackgroundDrawable(ColorDrawable(colors.background.toArgb()))
+                WindowCompat.getInsetsController(window, view).apply {
+                    isAppearanceLightStatusBars = !dark
+                    isAppearanceLightNavigationBars = !dark
+                }
+            }
+        }
+    }
+
     CompositionLocalProvider(LocalCalcColors provides if (dark) DarkCalcColors else LightCalcColors) {
-        MaterialTheme(
-            colorScheme = if (dark) DarkColors else LightColors,
-            typography = AppTypography,
-            content = content,
-        )
+        MaterialTheme(colorScheme = colors, typography = AppTypography, content = content)
     }
 }

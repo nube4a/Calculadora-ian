@@ -10,6 +10,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import com.ian.calculadora.ui.theme.ThemeMode
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -84,6 +87,39 @@ enum class Screen(val title: String, val icon: ImageVector) {
     HISTORY("Historial", Icons.Outlined.History),
 }
 
+/** Selector segmentado Sistema / Claro / Oscuro. */
+@androidx.compose.runtime.Composable
+private fun ThemeSelector(current: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier
+            .padding(horizontal = 24.dp)
+            .fillMaxWidth()
+            .clip(CircleShape)
+            .background(colors.surfaceContainerHighest)
+            .padding(4.dp),
+    ) {
+        ThemeMode.entries.forEach { mode ->
+            val selected = mode == current
+            Box(
+                Modifier
+                    .weight(1f)
+                    .clip(CircleShape)
+                    .background(if (selected) colors.primary else Color.Transparent)
+                    .clickable { onSelect(mode) }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    mode.label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) colors.onPrimary else colors.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 class MainActivity : ComponentActivity() {
 
     private val viewModel: CalculatorViewModel by viewModels()
@@ -93,7 +129,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            CalculadoraTheme {
+            var themeMode by rememberSaveable { mutableStateOf(ThemeMode.from(viewModel.loadText("theme_mode"))) }
+            CalculadoraTheme(themeMode) {
                 var screen by rememberSaveable { mutableStateOf(Screen.CALC) }
                 val drawer = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
@@ -161,6 +198,20 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.padding(horizontal = 12.dp),
                                         )
                                     }
+                                }
+                                androidx.compose.material3.HorizontalDivider(
+                                    Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                )
+                                Text(
+                                    "Apariencia",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 28.dp, top = 8.dp, bottom = 8.dp),
+                                )
+                                ThemeSelector(themeMode) {
+                                    themeMode = it
+                                    viewModel.saveText("theme_mode", it.name)
                                 }
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 val version = remember {

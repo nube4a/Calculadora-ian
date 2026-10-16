@@ -36,3 +36,8 @@ Código: `app/src/main/java/com/ian/calculadora/ui/theme/` (`Theme.kt`, `Type.kt
 - El **rojo/coral solo** significa borrar o error. Lo seleccionado siempre es azul.
 - Todo número usa cifras tabulares para que no "baile" al escribir.
 - Nada de colores sueltos en las pantallas: se usan los del tema.
+
+## Tema claro / oscuro
+
+El tema se elige en el menú ☰ → **Apariencia**: *Sistema* (sigue al teléfono), *Claro* u *Oscuro*.
+La elección se guarda y también controla los íconos de la barra de estado y el fondo de la ventana.
